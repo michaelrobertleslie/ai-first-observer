@@ -38,12 +38,12 @@ export function scorecardUrl(asset: string): string {
 
 /** Build a Jira issue URL from a key like "PLAT-12345" */
 export function jiraUrl(key: string): string {
-  return `https://jira.internal.dynatrace.com/browse/${encodeURIComponent(key)}`;
+  return `https://dt-rnd.atlassian.net/browse/${encodeURIComponent(key)}`;
 }
 
 /** Build a Jira JQL search URL */
 export function jiraSearchUrl(jql: string): string {
-  return `https://jira.internal.dynatrace.com/issues/?jql=${encodeURIComponent(jql)}`;
+  return `https://dt-rnd.atlassian.net/issues/?jql=${encodeURIComponent(jql)}`;
 }
 
 /** Registry of known capabilities */
