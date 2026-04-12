@@ -2,13 +2,16 @@
   "$schema": "./.dt-app/app.config.schema.json",
   "environmentUrl": "https://umsaywsjuo.dev.apps.dynatracelabs.com/",
   "app": {
-    "name": "ai-first-observer",
-    "version": "0.0.0",
-    "description": "A starting project with routing, fetching data, and charting",
+    "name": "AI-First Observer",
+    "version": "0.1.0",
+    "description": "Measure AI-First impact on velocity, quality, and predictability",
     "id": "my.ai.first.observer",
     "scopes": [
       { "name": "storage:logs:read", "comment": "default template" },
-      { "name": "storage:buckets:read", "comment": "default template" }
+      { "name": "storage:buckets:read", "comment": "default template" },
+      { "name": "storage:bizevents:read", "comment": "Jira daily snapshot data" },
+      { "name": "storage:events:read", "comment": "Davis problems" },
+      { "name": "storage:metrics:read", "comment": "RUM metrics" }
     ]
   }
 }
