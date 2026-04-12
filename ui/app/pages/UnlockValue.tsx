@@ -86,40 +86,45 @@ function CycleTimeSummary() {
   );
 }
 
-/* ── Cycle time trend ───────────────────────────────── */
+/* ── Cycle time trend (chart) ───────────────────────── */
 function CycleTimeTrend() {
   const { capability } = useCapability();
   const { data, isLoading } = useDql({ query: viCycleTimeTrendQuery(capability) });
 
-  const columns: Col[] = useMemo(
-    () => [
-      { id: "month", accessor: "month", header: "Month", minWidth: 100 },
-      { id: "vi_count", accessor: "vi_count", header: "VIs Closed", minWidth: 90, alignment: "right" as const },
-      {
-        id: "avg_cycle", accessor: "avg_cycle", header: "Avg Cycle (days)", minWidth: 130, alignment: "right" as const,
-        cell: ({ value }: { value: unknown }) => (
-          <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
-            {Math.round(Number(value) || 0)}
-          </span>
-        ),
-      },
-      {
-        id: "p50_cycle", accessor: "p50_cycle", header: "p50 (days)", minWidth: 110, alignment: "right" as const,
-        cell: ({ value }: { value: unknown }) => (
-          <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
-            {Math.round(Number(value) || 0)}
-          </span>
-        ),
-      },
-    ],
-    [],
+  const avgData = useMemo(
+    () => (data?.records ?? []).map((r) => ({
+      category: String(r.month ?? ""),
+      value: Math.round(Number(r.avg_cycle) || 0),
+    })),
+    [data],
+  );
+
+  const p50Data = useMemo(
+    () => (data?.records ?? []).map((r) => ({
+      category: String(r.month ?? ""),
+      value: Math.round(Number(r.p50_cycle) || 0),
+    })),
+    [data],
   );
 
   return card(
     <>
       <Heading level={4}>Cycle Time Trend (monthly)</Heading>
-      {isLoading ? loading() : (data?.records?.length ?? 0) > 0 ? (
-        <DataTable data={data?.records ?? []} columns={columns} sortable resizable />
+      {isLoading ? loading() : avgData.length > 0 ? (
+        <Flex flexDirection="column" gap={16}>
+          <Flex flexDirection="column" gap={4}>
+            <Paragraph style={{ fontSize: 11, fontWeight: 600 }}>Average Cycle Time (days)</Paragraph>
+            <CategoricalBarChart data={avgData} layout="vertical">
+              <CategoricalBarChart.Legend hidden />
+            </CategoricalBarChart>
+          </Flex>
+          <Flex flexDirection="column" gap={4}>
+            <Paragraph style={{ fontSize: 11, fontWeight: 600 }}>Median (p50) Cycle Time (days)</Paragraph>
+            <CategoricalBarChart data={p50Data} layout="vertical">
+              <CategoricalBarChart.Legend hidden />
+            </CategoricalBarChart>
+          </Flex>
+        </Flex>
       ) : empty("No data")}
     </>,
   );

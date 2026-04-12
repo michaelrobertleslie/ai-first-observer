@@ -11,7 +11,8 @@ import Colors from "@dynatrace/strato-design-tokens/colors";
 import { useCapability } from "../CapabilityContext";
 import {
   derSummaryQuery,
-  derTrendQuery,
+  derSplitTrendQuery,
+  derCustomerSplitQuery,
   prodBugsByComponentQuery,
   recentProdBugsQuery,
 } from "../queries";
@@ -34,17 +35,24 @@ function empty(msg: string) {
   return <Paragraph style={{ opacity: 0.5 }}>{msg}</Paragraph>;
 }
 
-/* ── DER overview ───────────────────────────────────── */
+/* ── DER overview with customer-escalation split ────── */
 function DerSummary() {
   const { capability } = useCapability();
   const { data, isLoading } = useDql({ query: derSummaryQuery(capability) });
+  const { data: splitData, isLoading: splitLoading } = useDql({ query: derCustomerSplitQuery(capability) });
 
   const records = data?.records ?? [];
   const total = records.reduce((s, r) => s + (Number(r.bug_count) || 0), 0);
   const prod = Number(records.find((r) => r["Found in"] === "PRODUCTION")?.bug_count) || 0;
   const derPct = total > 0 ? (100 * prod / total) : 0;
 
-  const chartData = useMemo(
+  const splitRecs = splitData?.records ?? [];
+  const custBugs = Number(splitRecs.find((r) => r.source === "Customer-Escalated")?.bug_count) || 0;
+  const intBugs = Number(splitRecs.find((r) => r.source === "Internally Discovered")?.bug_count) || 0;
+  const custDerPct = total > 0 ? (100 * custBugs / total) : 0;
+  const intDerPct = total > 0 ? (100 * intBugs / total) : 0;
+
+  const stageChart = useMemo(
     () => records.map((r) => ({
       category: String(r["Found in"] ?? "Unknown"),
       value: Number(r.bug_count) || 0,
@@ -52,72 +60,131 @@ function DerSummary() {
     [records],
   );
 
+  const splitChart = useMemo(
+    () => splitRecs.map((r) => ({
+      category: String(r.source ?? "Unknown"),
+      value: Number(r.bug_count) || 0,
+    })),
+    [splitRecs],
+  );
+
+  const anyLoad = isLoading || splitLoading;
+
   return (
     <Flex gap={16} style={{ width: "100%" }} flexFlow="wrap">
-      {/* DER card */}
-      <Surface style={{ flex: "0 0 220px" }}>
-        <Flex flexDirection="column" gap={8} padding={24} alignItems="center">
-          <Paragraph style={{ opacity: 0.6, fontSize: 12 }}>Defect Escape Rate</Paragraph>
-          {isLoading ? <ProgressCircle /> : (
+      {/* Overall DER card */}
+      <Surface style={{ flex: "0 0 200px" }}>
+        <Flex flexDirection="column" gap={6} padding={24} alignItems="center">
+          <Paragraph style={{ opacity: 0.5, fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>Overall DER</Paragraph>
+          {anyLoad ? <ProgressCircle /> : (
             <>
               <Heading level={1} style={{ color: derPct > 20 ? Colors.Charts.Apdex.Unacceptable.Default : derPct > 5 ? Colors.Charts.Apdex.Poor.Default : Colors.Charts.Apdex.Good.Default }}>
                 {derPct.toFixed(1)}%
               </Heading>
-              <Paragraph style={{ opacity: 0.5, fontSize: 11 }}>
-                {prod.toLocaleString()} prod / {total.toLocaleString()} total (12 mo)
-              </Paragraph>
-              <Paragraph style={{ opacity: 0.4, fontSize: 11 }}>Target: &lt; 5%</Paragraph>
+              <Paragraph style={{ opacity: 0.5, fontSize: 11 }}>{prod.toLocaleString()} / {total.toLocaleString()} bugs</Paragraph>
+              <Paragraph style={{ opacity: 0.35, fontSize: 10 }}>Target: &lt; 5%</Paragraph>
             </>
           )}
         </Flex>
       </Surface>
 
-      {/* Waterfall chart */}
-      <Surface style={{ flex: "1 1 400px", minWidth: 340 }}>
+      {/* Customer DER card */}
+      <Surface style={{ flex: "0 0 200px", borderTop: `3px solid ${Colors.Charts.Apdex.Unacceptable.Default}` }}>
+        <Flex flexDirection="column" gap={6} padding={24} alignItems="center">
+          <Paragraph style={{ opacity: 0.5, fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>Customer-Escalated</Paragraph>
+          {anyLoad ? <ProgressCircle /> : (
+            <>
+              <Heading level={2} style={{ color: custDerPct > 5 ? Colors.Charts.Apdex.Unacceptable.Default : Colors.Charts.Apdex.Fair.Default }}>
+                {custDerPct.toFixed(1)}%
+              </Heading>
+              <Paragraph style={{ opacity: 0.5, fontSize: 11 }}>{custBugs} bugs (Support-triggered)</Paragraph>
+            </>
+          )}
+        </Flex>
+      </Surface>
+
+      {/* Internal DER card */}
+      <Surface style={{ flex: "0 0 200px", borderTop: `3px solid ${Colors.Charts.Apdex.Fair.Default}` }}>
+        <Flex flexDirection="column" gap={6} padding={24} alignItems="center">
+          <Paragraph style={{ opacity: 0.5, fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>Internal Production</Paragraph>
+          {anyLoad ? <ProgressCircle /> : (
+            <>
+              <Heading level={2} style={{ color: Colors.Charts.Apdex.Fair.Default }}>
+                {intDerPct.toFixed(1)}%
+              </Heading>
+              <Paragraph style={{ opacity: 0.5, fontSize: 11 }}>{intBugs} bugs (internally found)</Paragraph>
+            </>
+          )}
+        </Flex>
+      </Surface>
+
+      {/* Discovery stage chart */}
+      <Surface style={{ flex: "1 1 300px", minWidth: 280 }}>
         <Flex flexDirection="column" gap={12} padding={24}>
-          <Heading level={4}>Bugs by Discovery Stage (12 months)</Heading>
-          {isLoading ? loading() : chartData.length > 0 ? (
-            <CategoricalBarChart data={chartData} layout="horizontal">
+          <Heading level={5}>Bugs by Discovery Stage</Heading>
+          {anyLoad ? loading() : stageChart.length > 0 ? (
+            <CategoricalBarChart data={stageChart} layout="horizontal">
               <CategoricalBarChart.Legend hidden />
             </CategoricalBarChart>
-          ) : empty("No bug data")}
+          ) : empty("No data")}
+        </Flex>
+      </Surface>
+
+      {/* Customer split chart */}
+      <Surface style={{ flex: "1 1 300px", minWidth: 280 }}>
+        <Flex flexDirection="column" gap={12} padding={24}>
+          <Heading level={5}>Production Bug Source</Heading>
+          {anyLoad ? loading() : splitChart.length > 0 ? (
+            <CategoricalBarChart data={splitChart} layout="horizontal">
+              <CategoricalBarChart.Legend hidden />
+            </CategoricalBarChart>
+          ) : empty("No data")}
         </Flex>
       </Surface>
     </Flex>
   );
 }
 
-/* ── DER trend ──────────────────────────────────────── */
+/* ── DER trend chart (replaces table) ───────────────── */
 function DerTrend() {
   const { capability } = useCapability();
-  const { data, isLoading } = useDql({ query: derTrendQuery(capability) });
+  const { data, isLoading } = useDql({ query: derSplitTrendQuery(capability) });
 
-  const columns: Col[] = useMemo(
-    () => [
-      { id: "month", accessor: "month", header: "Month", minWidth: 100 },
-      { id: "total", accessor: "total", header: "Total Bugs", minWidth: 100, alignment: "right" as const },
-      { id: "prod_count", accessor: "prod_count", header: "Prod Bugs", minWidth: 100, alignment: "right" as const },
-      {
-        id: "der_pct", accessor: "der_pct", header: "DER %", minWidth: 100, alignment: "right" as const,
-        cell: ({ value }: { value: unknown }) => {
-          const pct = Number(value) || 0;
-          const color = pct > 20 ? Colors.Charts.Apdex.Unacceptable.Default : pct > 5 ? Colors.Charts.Apdex.Poor.Default : Colors.Charts.Apdex.Good.Default;
-          return (
-            <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", height: "100%", color, fontWeight: pct > 20 ? 700 : 400 }}>
-              {pct.toFixed(1)}%
-            </span>
-          );
-        },
-      },
-    ],
-    [],
-  );
+  const chartData = useMemo(() => {
+    const recs = data?.records ?? [];
+    return recs.map((r) => ({
+      category: String(r.month ?? ""),
+      value: Number(r.der_pct) || 0,
+    }));
+  }, [data]);
+
+  const custChartData = useMemo(() => {
+    const recs = data?.records ?? [];
+    return recs.map((r) => ({
+      category: String(r.month ?? ""),
+      value: Number(r.customer_der_pct) || 0,
+    }));
+  }, [data]);
 
   return card(
     <>
       <Heading level={4}>DER Trend (monthly)</Heading>
-      {isLoading ? loading() : (data?.records?.length ?? 0) > 0 ? (
-        <DataTable data={data?.records ?? []} columns={columns} sortable resizable />
+      <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>Overall DER % and customer-escalated DER % per month.</Paragraph>
+      {isLoading ? loading() : chartData.length > 0 ? (
+        <Flex flexDirection="column" gap={16}>
+          <Flex flexDirection="column" gap={4}>
+            <Paragraph style={{ fontSize: 11, fontWeight: 600 }}>Overall DER %</Paragraph>
+            <CategoricalBarChart data={chartData} layout="vertical">
+              <CategoricalBarChart.Legend hidden />
+            </CategoricalBarChart>
+          </Flex>
+          <Flex flexDirection="column" gap={4}>
+            <Paragraph style={{ fontSize: 11, fontWeight: 600 }}>Customer-Escalated DER %</Paragraph>
+            <CategoricalBarChart data={custChartData} layout="vertical">
+              <CategoricalBarChart.Legend hidden />
+            </CategoricalBarChart>
+          </Flex>
+        </Flex>
       ) : empty("No data")}
     </>,
   );

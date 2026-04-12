@@ -3,6 +3,7 @@ import { Flex } from "@dynatrace/strato-components/layouts";
 import { Surface } from "@dynatrace/strato-components/layouts";
 import { Heading, Paragraph } from "@dynatrace/strato-components/typography";
 import { DataTable, type DataTableColumnDef } from "@dynatrace/strato-components-preview/tables";
+import { CategoricalBarChart } from "@dynatrace/strato-components/charts";
 import type { ResultRecord } from "@dynatrace-sdk/client-query";
 import { useDql } from "@dynatrace-sdk/react-hooks";
 import { ProgressCircle } from "@dynatrace/strato-components/content";
@@ -31,75 +32,91 @@ function empty(msg: string) {
   return <Paragraph style={{ opacity: 0.5 }}>{msg}</Paragraph>;
 }
 
-/* ── Sprint velocity ────────────────────────────────── */
+/* ── Sprint velocity (chart + table) ────────────────── */
 function SprintVelocity() {
   const { capability } = useCapability();
   const { data, isLoading } = useDql({ query: storyVelocityQuery(capability) });
 
-  const columns: Col[] = useMemo(
-    () => [
-      { id: "Sprint", accessor: "Sprint", header: "Sprint", minWidth: 200 },
-      { id: "stories_closed", accessor: "stories_closed", header: "Stories Closed", minWidth: 120, alignment: "right" as const },
-      {
-        id: "total_points", accessor: "total_points", header: "Story Points", minWidth: 120, alignment: "right" as const,
-        cell: ({ value }: { value: unknown }) => (
-          <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
-            {value != null ? Math.round(Number(value)) : "—"}
-          </span>
-        ),
-      },
-    ],
-    [],
+  const chartData = useMemo(
+    () => (data?.records ?? []).slice().reverse().map((r) => ({
+      category: String(r.Sprint ?? "").replace(/^.*?\s/, ""),
+      value: Number(r.stories_closed) || 0,
+    })),
+    [data],
+  );
+
+  const pointsData = useMemo(
+    () => (data?.records ?? []).slice().reverse().map((r) => ({
+      category: String(r.Sprint ?? "").replace(/^.*?\s/, ""),
+      value: Math.round(Number(r.total_points) || 0),
+    })),
+    [data],
   );
 
   return card(
     <>
       <Heading level={4}>Sprint Velocity (last 90 days)</Heading>
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>Stories closed and story points per sprint — proxy for team throughput.</Paragraph>
-      {isLoading ? loading() : (data?.records?.length ?? 0) > 0 ? (
-        <DataTable data={data?.records ?? []} columns={columns} sortable resizable>
-          <DataTable.Pagination defaultPageSize={10} />
-        </DataTable>
+      {isLoading ? loading() : chartData.length > 0 ? (
+        <Flex flexDirection="column" gap={16}>
+          <Flex flexDirection="column" gap={4}>
+            <Paragraph style={{ fontSize: 11, fontWeight: 600 }}>Stories Closed</Paragraph>
+            <CategoricalBarChart data={chartData} layout="vertical">
+              <CategoricalBarChart.Legend hidden />
+            </CategoricalBarChart>
+          </Flex>
+          <Flex flexDirection="column" gap={4}>
+            <Paragraph style={{ fontSize: 11, fontWeight: 600 }}>Story Points</Paragraph>
+            <CategoricalBarChart data={pointsData} layout="vertical">
+              <CategoricalBarChart.Legend hidden />
+            </CategoricalBarChart>
+          </Flex>
+        </Flex>
       ) : empty("No sprint data")}
     </>,
   );
 }
 
-/* ── Story cycle time trend ─────────────────────────── */
+/* ── Story cycle time trend (chart) ─────────────────── */
 function StoryCycleTime() {
   const { capability } = useCapability();
   const { data, isLoading } = useDql({ query: storyCycleTimeTrendQuery(capability) });
 
-  const columns: Col[] = useMemo(
-    () => [
-      { id: "month", accessor: "month", header: "Month", minWidth: 100 },
-      { id: "stories", accessor: "stories", header: "Stories Closed", minWidth: 120, alignment: "right" as const },
-      {
-        id: "avg_cycle", accessor: "avg_cycle", header: "Avg Cycle (days)", minWidth: 130, alignment: "right" as const,
-        cell: ({ value }: { value: unknown }) => (
-          <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
-            {Math.round(Number(value) || 0)}
-          </span>
-        ),
-      },
-      {
-        id: "p50_cycle", accessor: "p50_cycle", header: "p50 (days)", minWidth: 110, alignment: "right" as const,
-        cell: ({ value }: { value: unknown }) => (
-          <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
-            {Math.round(Number(value) || 0)}
-          </span>
-        ),
-      },
-    ],
-    [],
+  const avgData = useMemo(
+    () => (data?.records ?? []).map((r) => ({
+      category: String(r.month ?? ""),
+      value: Math.round(Number(r.avg_cycle) || 0),
+    })),
+    [data],
+  );
+
+  const p50Data = useMemo(
+    () => (data?.records ?? []).map((r) => ({
+      category: String(r.month ?? ""),
+      value: Math.round(Number(r.p50_cycle) || 0),
+    })),
+    [data],
   );
 
   return card(
     <>
       <Heading level={4}>Story Cycle Time Trend (monthly)</Heading>
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>Average days from creation to close — is AI tooling reducing friction?</Paragraph>
-      {isLoading ? loading() : (data?.records?.length ?? 0) > 0 ? (
-        <DataTable data={data?.records ?? []} columns={columns} sortable resizable />
+      {isLoading ? loading() : avgData.length > 0 ? (
+        <Flex flexDirection="column" gap={16}>
+          <Flex flexDirection="column" gap={4}>
+            <Paragraph style={{ fontSize: 11, fontWeight: 600 }}>Average Cycle Time (days)</Paragraph>
+            <CategoricalBarChart data={avgData} layout="vertical">
+              <CategoricalBarChart.Legend hidden />
+            </CategoricalBarChart>
+          </Flex>
+          <Flex flexDirection="column" gap={4}>
+            <Paragraph style={{ fontSize: 11, fontWeight: 600 }}>Median (p50) Cycle Time (days)</Paragraph>
+            <CategoricalBarChart data={p50Data} layout="vertical">
+              <CategoricalBarChart.Legend hidden />
+            </CategoricalBarChart>
+          </Flex>
+        </Flex>
       ) : empty("No data")}
     </>,
   );

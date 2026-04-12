@@ -128,6 +128,35 @@ export function recentProdBugsQuery(cap: Capability): string {
 | limit 50`;
 }
 
+/** Production bugs split by customer-escalation (Support-triggered) */
+export function derCustomerSplitQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 365d
+| filter event.type == "jira_daily.bug"
+  AND project == "${cap.bugProject}"
+  AND \`Found in\` == "PRODUCTION"
+| dedup key
+| fieldsAdd source = if(\`Support-triggered\` == "true", "Customer-Escalated", else: "Internally Discovered")
+| summarize bug_count = count(), by: {source}
+| sort bug_count desc`;
+}
+
+/** DER trend with customer-escalation split per month */
+export function derSplitTrendQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 365d
+| filter event.type == "jira_daily.bug"
+  AND project == "${cap.bugProject}"
+  AND isNotNull(created)
+| dedup key
+| fieldsAdd month = formatTimestamp(toTimestamp(created), format: "yyyy-MM")
+| fieldsAdd is_prod = if(\`Found in\` == "PRODUCTION", 1, else: 0)
+| fieldsAdd is_customer = if(\`Found in\` == "PRODUCTION" AND \`Support-triggered\` == "true", 1, else: 0)
+| summarize total = count(), prod_count = sum(is_prod), customer_count = sum(is_customer), by: {month}
+| fieldsAdd der_pct = 100.0 * toDouble(prod_count) / toDouble(total)
+| fieldsAdd customer_der_pct = 100.0 * toDouble(customer_count) / toDouble(total)
+| fieldsAdd internal_count = prod_count - customer_count
+| sort month asc`;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    PILLAR 3 — PREDICTABILITY (Fix Version Stability)
    ═══════════════════════════════════════════════════════════════ */
