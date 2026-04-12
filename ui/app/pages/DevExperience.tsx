@@ -214,16 +214,32 @@ export const DevExperience = () => {
     <Flex flexDirection="column" gap={16} padding={16}>
       <Heading level={2}>Pillar 4: Developer Experience</Heading>
       <Paragraph style={{ opacity: 0.6 }}>
-        Proxy metrics from Jira for {capability.label}. Sprint velocity, story cycle time, and WIP indicate team flow and friction.
+        Identify bottlenecks, reduce friction, and empower engineers to solve their own problems. The metrics below expose where
+        work stalls so {capability.label} teams can self-diagnose and act — without waiting for a report.
       </Paragraph>
 
       <Surface style={{ width: "100%" }}>
         <Flex flexDirection="column" gap={8} padding={24}>
-          <Heading level={4}>Future: Direct DevEx Measurement</Heading>
-          <Paragraph style={{ opacity: 0.6 }}>
-            Industry frameworks like SPACE and DX Core 4 recommend combining developer surveys with system metrics.
-            Future iterations will integrate survey data (satisfaction, perceived productivity, tooling effectiveness)
-            alongside proxy metrics like PR cycle time, build times, and CI failure rates.
+          <Heading level={4}>Evolving: Richer DevEx Metrics</Heading>
+          <Paragraph style={{ opacity: 0.6, fontSize: 13 }}>
+            Sprint velocity, cycle time, and WIP are proxy metrics from Jira. As the AI-First Observer evolves, we plan to incorporate:
+          </Paragraph>
+          <Flex flexDirection="column" gap={4} style={{ paddingLeft: 16 }}>
+            <Paragraph style={{ fontSize: 12 }}>
+              <strong style={{ color: Colors.Charts.Apdex.Excellent.Default }}>Next up:</strong>{" "}
+              GitHub PR cycle time, review turnaround, and merge velocity (requires GitHub event ingestion into Grail)
+            </Paragraph>
+            <Paragraph style={{ fontSize: 12 }}>
+              <strong style={{ color: Colors.Charts.Apdex.Good.Default }}>Planned:</strong>{" "}
+              CI/CD pipeline duration and failure rates · Build feedback loop times
+            </Paragraph>
+            <Paragraph style={{ fontSize: 12 }}>
+              <strong style={{ color: Colors.Charts.Apdex.Fair.Default }}>Future:</strong>{" "}
+              Developer surveys (SPACE / DX Core 4) for satisfaction, perceived productivity, and tooling effectiveness
+            </Paragraph>
+          </Flex>
+          <Paragraph style={{ opacity: 0.4, fontSize: 11, marginTop: 4 }}>
+            The goal: engineers can see exactly where friction exists and fix it themselves, without waiting for management to notice.
           </Paragraph>
         </Flex>
       </Surface>

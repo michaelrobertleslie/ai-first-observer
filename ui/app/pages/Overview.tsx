@@ -12,6 +12,9 @@ import {
   derRollingQuarterQuery,
   viThroughputTrendQuery,
   derCustomerSplitRollingQuery,
+  derTrendQuery,
+  predictabilityTrendQuery,
+  storyCycleTimeTrendQuery,
 } from "../queries";
 
 /* ── Gauge ring (SVG progress ring) ─────────────────── */
@@ -57,9 +60,46 @@ const PILLAR_COLORS = [
   Colors.Charts.Apdex.Poor.Default,
 ];
 
-function PillarCard({ n, title, desc, metric, route, color }: {
+/** Compute quarter-over-quarter trend from monthly records.
+ *  Returns "up" | "down" | "flat" based on sum/avg of last 3 months vs previous 3. */
+function qoqTrend(
+  records: { month?: unknown; [k: string]: unknown }[],
+  field: string,
+  mode: "sum" | "avg" = "sum",
+): "up" | "down" | "flat" {
+  if (records.length < 4) return "flat";
+  const sorted = [...records].sort((a, b) => String(a.month ?? "").localeCompare(String(b.month ?? "")));
+  const recent = sorted.slice(-3);
+  const prev = sorted.slice(-6, -3);
+  if (prev.length === 0) return "flat";
+  const agg = (arr: typeof records) => {
+    const vals = arr.map((r) => Number(r[field]) || 0);
+    const total = vals.reduce((s, v) => s + v, 0);
+    return mode === "avg" ? total / (vals.length || 1) : total;
+  };
+  const cur = agg(recent);
+  const pre = agg(prev);
+  const delta = pre !== 0 ? (cur - pre) / Math.abs(pre) : 0;
+  if (Math.abs(delta) < 0.05) return "flat";
+  return delta > 0 ? "up" : "down";
+}
+
+const TREND_ICONS: Record<string, { symbol: string; label: string }> = {
+  up: { symbol: "▲", label: "Improving" },
+  down: { symbol: "▼", label: "Declining" },
+  flat: { symbol: "►", label: "Stable" },
+};
+
+function PillarCard({ n, title, desc, metric, route, color, trend, trendGood }: {
   n: string; title: string; desc: string; metric: string; route: string; color: string;
+  trend?: "up" | "down" | "flat"; trendGood?: "up" | "down";
 }) {
+  const trendColor = !trend || trend === "flat"
+    ? Colors.Charts.Apdex.Fair.Default
+    : trend === trendGood
+      ? Colors.Charts.Apdex.Good.Default
+      : Colors.Charts.Apdex.Poor.Default;
+  const ti = trend ? TREND_ICONS[trend] : undefined;
   return (
     <Link to={route} style={{ textDecoration: "none", flex: "1 1 220px", minWidth: 220 }}>
       <Surface style={{ height: "100%", cursor: "pointer", borderTop: `3px solid ${color}` }}>
@@ -67,6 +107,12 @@ function PillarCard({ n, title, desc, metric, route, color }: {
           <Flex gap={8} alignItems="center">
             <span style={{ fontSize: 20, fontWeight: 800, color, lineHeight: 1 }}>{n}</span>
             <Heading level={5}>{title}</Heading>
+            {ti && (
+              <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, color: trendColor }}
+                title={`Quarter-over-quarter: ${ti.label}`}>
+                {ti.symbol} {ti.label}
+              </span>
+            )}
           </Flex>
           <Paragraph style={{ opacity: 0.6, fontSize: 12, flex: 1 }}>{desc}</Paragraph>
           <Paragraph style={{ fontSize: 11, fontWeight: 600, color }}>{metric}</Paragraph>
@@ -82,6 +128,9 @@ export const Overview = () => {
   const der = useDql({ query: derRollingQuarterQuery(capability) });
   const throughput = useDql({ query: viThroughputTrendQuery(capability) });
   const custSplit = useDql({ query: derCustomerSplitRollingQuery(capability) });
+  const derTrend = useDql({ query: derTrendQuery(capability) });
+  const predTrend = useDql({ query: predictabilityTrendQuery(capability) });
+  const devexTrend = useDql({ query: storyCycleTimeTrendQuery(capability) });
 
   const bl = baseline.data?.records?.[0];
   const derRecords = der.data?.records ?? [];
@@ -97,6 +146,12 @@ export const Overview = () => {
   // Throughput trend — latest quarter VI count
   const tpRecs = throughput.data?.records ?? [];
   const latestQVis = tpRecs.slice(-3).reduce((s, r) => s + (Number(r.vi_count) || 0), 0);
+
+  // QoQ trend arrows for pillar cards
+  const valueTrend = qoqTrend(tpRecs as any[], "vi_count", "sum");        // more VIs = better → up is good
+  const qualityTrend = qoqTrend((derTrend.data?.records ?? []) as any[], "der_pct", "avg"); // lower DER = better → down is good
+  const predDirection = qoqTrend((predTrend.data?.records ?? []) as any[], "churn_pct", "avg"); // lower churn = better → down is good
+  const devexDirection = qoqTrend((devexTrend.data?.records ?? []) as any[], "p50_cycle", "avg"); // lower cycle = better → down is good
 
   const anyLoading = baseline.isLoading || der.isLoading || throughput.isLoading || custSplit.isLoading;
 
@@ -174,21 +229,25 @@ export const Overview = () => {
           n="1" title="Unlock Value" route="/value" color={PILLAR_COLORS[0]}
           desc="Deliver more valuable features, faster. Compress the 4-year roadmap into 1 year."
           metric={`${totalClosed} VIs closed · ${p50}d median cycle`}
+          trend={valueTrend} trendGood="up"
         />
         <PillarCard
           n="2" title="Quality" route="/quality" color={PILLAR_COLORS[1]}
           desc="Drive Defect Escape Rate below 5%. Catch bugs before they reach customers."
           metric={`${derPct.toFixed(1)}% DER · ${custBugs} customer-escalated`}
+          trend={qualityTrend} trendGood="down"
         />
         <PillarCard
           n="3" title="Predictability" route="/predictability" color={PILLAR_COLORS[2]}
           desc="Stable fix versions and target dates. Deliver what we commit to, when we commit to it."
           metric="Fix version stability →"
+          trend={predDirection} trendGood="down"
         />
         <PillarCard
           n="4" title="Developer Experience" route="/devex" color={PILLAR_COLORS[3]}
-          desc="Eliminate SDLC bottlenecks. Engineers should love working with AI-first tooling."
+          desc="Identify bottlenecks, reduce friction, and empower engineers to solve their own problems."
           metric="Sprint velocity & cycle time →"
+          trend={devexDirection} trendGood="down"
         />
       </Flex>
 
