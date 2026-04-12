@@ -12,12 +12,13 @@ Defaults to Platform Apps (PAPA) but supports any capability via a dropdown sele
 
 ```
 ui/app/
-├── config.ts              # Capability registry, scorecard config
-├── queries.ts             # All DQL queries (~20 functions)
+├── config.ts              # Capability registry, scorecard config (219 lines)
+├── queries.ts             # All DQL queries — 27 query functions (400 lines)
 ├── CapabilityContext.tsx   # React context for capability switching
-├── App.tsx                # Routes and layout
+├── App.tsx                # Routes: /, /value, /quality, /predictability, /devex
 ├── components/
-│   └── Header.tsx         # Navigation + capability selector
+│   ├── Header.tsx         # Navigation + capability selector
+│   └── Card.tsx           # Reusable card component
 └── pages/
     ├── Overview.tsx        # Hero KPIs with gauge rings, pillar nav cards, Juno links
     ├── UnlockValue.tsx     # VI throughput, cycle time, pipeline
@@ -101,13 +102,13 @@ Production bugs are split into **Customer-Escalated** (Support-triggered = true)
 ## Development
 
 ```bash
-npm run start     # Dev server with hot reload
-npm run build     # Production build
-npm run deploy    # Build + deploy to environment in app.config.json
+npx dt-app dev     # Start development server
+npx dt-app build   # Build for deployment
+npx dt-app deploy  # Deploy to environment
 ```
 
-## Learn more
+## Environment
 
-You can find more information on how to use all the features of the new Dynatrace Platform in [Dynatrace Developer](https://dt-url.net/developers).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+- **App ID**: `my.ai.first.observer`
+- **Version**: 0.4.1
+- **Target**: `umsaywsjuo.dev.apps.dynatracelabs.com`
