@@ -9,6 +9,7 @@ import { useDql } from "@dynatrace-sdk/react-hooks";
 import { ProgressCircle } from "@dynatrace/strato-components/content";
 import Colors from "@dynatrace/strato-design-tokens/colors";
 import { useCapability } from "../CapabilityContext";
+import { scorecardUrl } from "../config";
 import {
   derSummaryQuery,
   derSplitTrendQuery,
@@ -255,6 +256,35 @@ function RecentProdBugs() {
   );
 }
 
+/* ── Component Scorecards ───────────────────────────── */
+function Scorecards() {
+  const { capability } = useCapability();
+  const assets = capability.scorecardAssets ?? [];
+  const links = capability.junoLinks ?? [];
+  if (assets.length === 0 && links.length === 0) return null;
+
+  return card(
+    <>
+      <Heading level={4}>Component Scorecards</Heading>
+      <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>Quality dashboards and Juno catalog pages for {capability.label} components.</Paragraph>
+      <Flex gap={8} flexFlow="wrap">
+        {assets.map(({ label, asset }) => (
+          <a key={asset} href={scorecardUrl(asset)} target="_blank" rel="noopener noreferrer"
+            style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "6px 12px", fontSize: 12, fontWeight: 500, borderRadius: 6, border: `1px solid ${Colors.Charts.Apdex.Good.Default}`, color: Colors.Charts.Apdex.Good.Default, textDecoration: "none" }}>
+            {label} ↗
+          </a>
+        ))}
+        {links.map(({ label, url }) => (
+          <a key={url} href={url} target="_blank" rel="noopener noreferrer"
+            style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "6px 12px", fontSize: 12, fontWeight: 500, borderRadius: 6, border: `1px solid ${Colors.Charts.Apdex.Fair.Default}`, color: Colors.Charts.Apdex.Fair.Default, textDecoration: "none" }}>
+            {label} ↗
+          </a>
+        ))}
+      </Flex>
+    </>,
+  );
+}
+
 /* ── Page ────────────────────────────────────────────── */
 export const Quality = () => {
   const { capability } = useCapability();
@@ -265,6 +295,7 @@ export const Quality = () => {
         Defect Escape Rate — what percentage of bugs are found in production? Target: &lt; 5%. Tracking for {capability.label}.
       </Paragraph>
       <DerSummary />
+      <Scorecards />
       <DerTrend />
       <ProdBugsByComponent />
       <RecentProdBugs />

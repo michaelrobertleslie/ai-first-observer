@@ -5,6 +5,16 @@
  * The capability key maps to `owning Program` (for VIs) and `project` (for bugs/stories).
  */
 
+export interface ScorecardAsset {
+  label: string;
+  asset: string;
+}
+
+export interface JunoLink {
+  label: string;
+  url: string;
+}
+
 export interface Capability {
   /** Display name shown in the UI */
   label: string;
@@ -14,6 +24,16 @@ export interface Capability {
   bugProject: string;
   /** Juno software catalog URL for this capability */
   junoCatalogUrl: string;
+  /** Component scorecards (dashboard links) */
+  scorecardAssets?: ScorecardAsset[];
+  /** Additional Juno catalog links (systems/SDKs without a scorecard dashboard) */
+  junoLinks?: JunoLink[];
+}
+
+const SCORECARD_BASE = "https://dre63214.apps.dynatrace.com/ui/apps/dynatrace.dashboards/dashboard/monaco-643204c8-ddb7-3891-9842-063f1dc1b1cf#from=now%28%29-14d&to=now%28%29&vfilter_assetVersion=summary&vfilter_asset=";
+
+export function scorecardUrl(asset: string): string {
+  return `${SCORECARD_BASE}${encodeURIComponent(asset)}`;
 }
 
 /** Registry of known capabilities */
@@ -23,6 +43,21 @@ export const CAPABILITIES: Record<string, Capability> = {
     viProgram: "Platform Apps",
     bugProject: "Platform Apps",
     junoCatalogUrl: "https://juno.internal.dynatrace.com/catalog/capability/group/platform-apps-papa",
+    scorecardAssets: [
+      { label: "Dashboards", asset: "dashboards" },
+      { label: "Dashboards CLI", asset: "dashboard-cli" },
+      { label: "AppShell", asset: "app-shell" },
+      { label: "Intent Explorer", asset: "dynatrace.intent.explorer-app" },
+      { label: "Onion Logs", asset: "dynatrace.onion.logs-app" },
+      { label: "Launcher", asset: "launcher" },
+      { label: "Notebooks", asset: "notebooks" },
+      { label: "Search Service", asset: "search-service" },
+      { label: "SmartScape App", asset: "dynatrace.smartscape-app" },
+    ],
+    junoLinks: [
+      { label: "Data Exploration (SDK)", url: "https://juno.internal.dynatrace.com/catalog/default/system/data-exploration" },
+      { label: "DQL Builder (SDK)", url: "https://juno.internal.dynatrace.com/catalog/dynatrace-sdk/component/dynatrace-sdk_dql-builder" },
+    ],
   },
   DAQ: {
     label: "Data Acquisition",
