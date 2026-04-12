@@ -9,9 +9,9 @@ import Colors from "@dynatrace/strato-design-tokens/colors";
 import { useCapability } from "../CapabilityContext";
 import {
   baselineSummaryQuery,
-  derSummaryQuery,
+  derRollingQuarterQuery,
   viThroughputTrendQuery,
-  derCustomerSplitQuery,
+  derCustomerSplitRollingQuery,
 } from "../queries";
 
 /* ── Gauge ring (SVG progress ring) ─────────────────── */
@@ -79,9 +79,9 @@ function PillarCard({ n, title, desc, metric, route, color }: {
 export const Overview = () => {
   const { capability } = useCapability();
   const baseline = useDql({ query: baselineSummaryQuery(capability) });
-  const der = useDql({ query: derSummaryQuery(capability) });
+  const der = useDql({ query: derRollingQuarterQuery(capability) });
   const throughput = useDql({ query: viThroughputTrendQuery(capability) });
-  const custSplit = useDql({ query: derCustomerSplitQuery(capability) });
+  const custSplit = useDql({ query: derCustomerSplitRollingQuery(capability) });
 
   const bl = baseline.data?.records?.[0];
   const derRecords = der.data?.records ?? [];
@@ -144,20 +144,20 @@ export const Overview = () => {
             color={cycleColor}
           />
           <HeroKpi
-            label="Defect Escape Rate"
+            label="DER (Rolling Quarter)"
             value={`${derPct.toFixed(1)}%`}
             target="< 5%"
             pct={Math.max(0, 100 - derPct * 2)}
             color={derColor}
-            sub={`${prodBugs.toLocaleString()} prod / ${totalBugs.toLocaleString()} total`}
+            sub={`${prodBugs.toLocaleString()} prod / ${totalBugs.toLocaleString()} total (90d)`}
           />
           <HeroKpi
-            label="Customer DER"
+            label="Customer DER (Rolling Qtr)"
             value={`${custDerPct.toFixed(1)}%`}
             target="< 2%"
             pct={Math.max(0, 100 - custDerPct * 5)}
             color={custColor}
-            sub={`${custBugs} customer-escalated production bugs`}
+            sub={`${custBugs} customer-escalated prod bugs (90d)`}
           />
         </Flex>
       )}

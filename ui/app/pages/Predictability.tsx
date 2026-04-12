@@ -9,8 +9,9 @@ import { useDql } from "@dynatrace-sdk/react-hooks";
 import { ProgressCircle } from "@dynatrace/strato-components/content";
 import Colors from "@dynatrace/strato-design-tokens/colors";
 import { useCapability } from "../CapabilityContext";
+import { jiraUrl } from "../config";
 import {
-  fixVersionChangesQuery,
+  fixVersionChangesExpandedQuery,
   fixVersionStability30dQuery,
   targetDateDriftQuery,
   deliveryAccuracyQuery,
@@ -37,14 +38,17 @@ function empty(msg: string) {
 /* ── Recent fixVersion changes ──────────────────────── */
 function RecentFixVersionChanges() {
   const { capability } = useCapability();
-  const { data, isLoading } = useDql({ query: fixVersionChangesQuery(capability) });
+  const { data, isLoading } = useDql({ query: fixVersionChangesExpandedQuery(capability) });
 
   const columns: Col[] = useMemo(
     () => [
       {
         id: "key", accessor: "key", header: "Key", minWidth: 120,
         cell: ({ value }: { value: unknown }) => (
-          <span style={{ display: "flex", alignItems: "center", height: "100%", fontWeight: 600 }}>{String(value ?? "")}</span>
+          <a href={jiraUrl(String(value ?? ""))} target="_blank" rel="noopener noreferrer"
+            style={{ display: "flex", alignItems: "center", height: "100%", fontWeight: 600, textDecoration: "none", color: "inherit" }}>
+            {String(value ?? "")} ↗
+          </a>
         ),
       },
       { id: "summary", accessor: "summary", header: "Summary", minWidth: 260 },
@@ -65,14 +69,22 @@ function RecentFixVersionChanges() {
           </span>
         ),
       },
+      {
+        id: "latest_target", accessor: "latest_target", header: "Target End", minWidth: 120,
+        cell: ({ value }: { value: unknown }) => (
+          <span style={{ display: "flex", alignItems: "center", height: "100%" }}>
+            {value ? String(value).substring(0, 10) : "—"}
+          </span>
+        ),
+      },
     ],
     [],
   );
 
   return card(
     <>
-      <Heading level={4}>Fix Version Changes (last 48h, in-flight VIs)</Heading>
-      <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>VIs in Implementation+ whose fixVersion changed between daily snapshots.</Paragraph>
+      <Heading level={4}>Fix Version Changes (last 7 days, in-flight VIs)</Heading>
+      <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>VIs in Implementation+ whose fixVersion changed between daily snapshots. Includes target end date.</Paragraph>
       {isLoading ? loading() : (data?.records?.length ?? 0) > 0 ? (
         <DataTable data={data?.records ?? []} columns={columns} sortable resizable />
       ) : empty("No fixVersion changes detected — good stability!")}
@@ -90,7 +102,10 @@ function FixVersionStability() {
       {
         id: "key", accessor: "key", header: "Key", minWidth: 120,
         cell: ({ value }: { value: unknown }) => (
-          <span style={{ display: "flex", alignItems: "center", height: "100%", fontWeight: 600 }}>{String(value ?? "")}</span>
+          <a href={jiraUrl(String(value ?? ""))} target="_blank" rel="noopener noreferrer"
+            style={{ display: "flex", alignItems: "center", height: "100%", fontWeight: 600, textDecoration: "none", color: "inherit" }}>
+            {String(value ?? "")} ↗
+          </a>
         ),
       },
       { id: "summary", accessor: "summary", header: "Summary", minWidth: 260 },
@@ -134,7 +149,10 @@ function TargetDateDrift() {
       {
         id: "key", accessor: "key", header: "Key", minWidth: 120,
         cell: ({ value }: { value: unknown }) => (
-          <span style={{ display: "flex", alignItems: "center", height: "100%", fontWeight: 600 }}>{String(value ?? "")}</span>
+          <a href={jiraUrl(String(value ?? ""))} target="_blank" rel="noopener noreferrer"
+            style={{ display: "flex", alignItems: "center", height: "100%", fontWeight: 600, textDecoration: "none", color: "inherit" }}>
+            {String(value ?? "")} ↗
+          </a>
         ),
       },
       { id: "summary", accessor: "summary", header: "Summary", minWidth: 260 },

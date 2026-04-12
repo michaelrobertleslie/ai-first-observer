@@ -142,7 +142,7 @@ export function derCustomerSplitQuery(cap: Capability): string {
 
 /** DER trend with customer-escalation split per month */
 export function derSplitTrendQuery(cap: Capability): string {
-  return `fetch bizevents, from: now() - 365d
+  return `fetch bizevents, from: now() - 730d
 | filter event.type == "jira_daily.bug"
   AND project == "${cap.bugProject}"
   AND isNotNull(created)
@@ -274,4 +274,78 @@ export function baselineSummaryQuery(cap: Capability): string {
 | dedup key
 | fieldsAdd cycle_days = (toTimestamp(resolutiondate) - toTimestamp(created)) / 86400000000000
 | summarize total_closed = count(), avg_cycle_days = avg(cycle_days), p50_cycle_days = percentile(cycle_days, 50), p90_cycle_days = percentile(cycle_days, 90)`;
+}
+
+/** DER for rolling quarter (90 days) */
+export function derRollingQuarterQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 90d
+| filter event.type == "jira_daily.bug"
+  AND project == "${cap.bugProject}"
+| dedup key
+| summarize bug_count = count(), by: {\`Found in\`}
+| sort bug_count desc`;
+}
+
+/** Customer-escalated production bugs for rolling quarter (90 days) */
+export function derCustomerSplitRollingQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 90d
+| filter event.type == "jira_daily.bug"
+  AND project == "${cap.bugProject}"
+  AND \`Found in\` == "PRODUCTION"
+| dedup key
+| fieldsAdd source = if(\`Support-triggered\` == "true", "Customer-Escalated", else: "Internally Discovered")
+| summarize bug_count = count(), by: {source}
+| sort bug_count desc`;
+}
+
+/** Quarterly VI throughput comparison (last 6 quarters) */
+export function viQuarterlyThroughputQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 730d
+| filter event.type == "jira_daily.valueincrement"
+  AND \`owning Program\` == "${cap.viProgram}"
+  AND status == "Closed"
+  AND isNotNull(resolutiondate)
+| dedup key
+| fieldsAdd resolved_ts = toTimestamp(resolutiondate)
+| fieldsAdd quarter = concat(formatTimestamp(resolved_ts, format: "yyyy"), "-Q", toString(toDouble(formatTimestamp(resolved_ts, format: "MM")) / 3.1 + 1.0))
+| fieldsAdd quarter_label = concat(formatTimestamp(resolved_ts, format: "yyyy"), if(toDouble(formatTimestamp(resolved_ts, format: "MM")) <= 3, "-Q1", else: if(toDouble(formatTimestamp(resolved_ts, format: "MM")) <= 6, "-Q2", else: if(toDouble(formatTimestamp(resolved_ts, format: "MM")) <= 9, "-Q3", else: "-Q4"))))
+| summarize vi_count = count(), by: {quarter_label}
+| sort quarter_label asc`;
+}
+
+/** Story points delivered per VI (guard rail against VI inflation) */
+export function storyPointsPerViQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 365d
+| filter event.type == "jira_daily.story"
+  AND project == "${cap.bugProject}"
+  AND status == "Closed"
+  AND isNotNull(\`Story Points\`)
+  AND isNotNull(resolutiondate)
+| dedup key
+| fieldsAdd month = formatTimestamp(toTimestamp(resolutiondate), format: "yyyy-MM")
+| summarize total_points = sum(\`Story Points\`), stories = count(), by: {month}
+| sort month asc`;
+}
+
+/** WIP detail — individual stories for drill-down */
+export function wipDetailQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 1d
+| filter event.type == "jira_daily.story"
+  AND project == "${cap.bugProject}"
+  AND in(status, "In Progress", "In Review", "In Verification")
+| dedup key
+| fields key, summary, status, Team, assignee, created
+| sort Team asc, status asc`;
+}
+
+/** Fix version changes with previous/current values for expanded view */
+export function fixVersionChangesExpandedQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 7d
+| filter event.type == "jira_daily.valueincrement"
+  AND \`owning Program\` == "${cap.viProgram}"
+  AND in(status, "Implementation", "Ready for Implementation", "Release Preparation")
+| sort timestamp desc
+| summarize latest_fv = takeFirst(fixVersions), earliest_fv = takeLast(fixVersions), latest_status = takeFirst(status), latest_target = takeFirst(\`Target end\`), snapshots = count(), by: {key, summary}
+| filter snapshots >= 2 AND latest_fv != earliest_fv
+| fields key, summary, latest_status, earliest_fv, latest_fv, latest_target`;
 }

@@ -9,7 +9,7 @@ import { useDql } from "@dynatrace-sdk/react-hooks";
 import { ProgressCircle } from "@dynatrace/strato-components/content";
 import Colors from "@dynatrace/strato-design-tokens/colors";
 import { useCapability } from "../CapabilityContext";
-import { scorecardUrl } from "../config";
+import { scorecardUrl, jiraUrl } from "../config";
 import {
   derSummaryQuery,
   derSplitTrendQuery,
@@ -169,8 +169,8 @@ function DerTrend() {
 
   return card(
     <>
-      <Heading level={4}>DER Trend (monthly)</Heading>
-      <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>Overall DER % and customer-escalated DER % per month.</Paragraph>
+      <Heading level={4}>DER Trend (monthly, 24 months)</Heading>
+      <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>Overall DER % and customer-escalated DER % per month over 2 years.</Paragraph>
       {isLoading ? loading() : chartData.length > 0 ? (
         <Flex flexDirection="column" gap={16}>
           <Flex flexDirection="column" gap={4}>
@@ -226,7 +226,10 @@ function RecentProdBugs() {
       {
         id: "key", accessor: "key", header: "Key", minWidth: 120,
         cell: ({ value }: { value: unknown }) => (
-          <span style={{ display: "flex", alignItems: "center", height: "100%", fontWeight: 600 }}>{String(value ?? "")}</span>
+          <a href={jiraUrl(String(value ?? ""))} target="_blank" rel="noopener noreferrer"
+            style={{ display: "flex", alignItems: "center", height: "100%", fontWeight: 600, textDecoration: "none", color: "inherit" }}>
+            {String(value ?? "")} ↗
+          </a>
         ),
       },
       { id: "summary", accessor: "summary", header: "Summary", minWidth: 300 },

@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Flex } from "@dynatrace/strato-components/layouts";
 import { Surface } from "@dynatrace/strato-components/layouts";
 import { Heading, Paragraph } from "@dynatrace/strato-components/typography";
@@ -7,11 +7,14 @@ import { CategoricalBarChart } from "@dynatrace/strato-components/charts";
 import type { ResultRecord } from "@dynatrace-sdk/client-query";
 import { useDql } from "@dynatrace-sdk/react-hooks";
 import { ProgressCircle } from "@dynatrace/strato-components/content";
+import Colors from "@dynatrace/strato-design-tokens/colors";
 import { useCapability } from "../CapabilityContext";
+import { jiraUrl } from "../config";
 import {
   storyVelocityQuery,
   storyCycleTimeTrendQuery,
   wipQuery,
+  wipDetailQuery,
 } from "../queries";
 
 type Col = DataTableColumnDef<ResultRecord>;
@@ -122,10 +125,12 @@ function StoryCycleTime() {
   );
 }
 
-/* ── Work in progress ───────────────────────────────── */
+/* ── Work in progress (expandable) ──────────────────── */
 function WorkInProgress() {
   const { capability } = useCapability();
   const { data, isLoading } = useDql({ query: wipQuery(capability) });
+  const { data: detailData, isLoading: detailLoading } = useDql({ query: wipDetailQuery(capability) });
+  const [showDetail, setShowDetail] = useState(false);
 
   const columns: Col[] = useMemo(
     () => [
@@ -136,15 +141,68 @@ function WorkInProgress() {
     [],
   );
 
+  const detailColumns: Col[] = useMemo(
+    () => [
+      {
+        id: "key", accessor: "key", header: "Key", minWidth: 120,
+        cell: ({ value }: { value: unknown }) => (
+          <a href={jiraUrl(String(value ?? ""))} target="_blank" rel="noopener noreferrer"
+            style={{ display: "flex", alignItems: "center", height: "100%", fontWeight: 600, textDecoration: "none", color: "inherit" }}>
+            {String(value ?? "")} ↗
+          </a>
+        ),
+      },
+      { id: "summary", accessor: "summary", header: "Summary", minWidth: 280 },
+      { id: "status", accessor: "status", header: "Status", minWidth: 120 },
+      { id: "Team", accessor: "Team", header: "Team", minWidth: 180 },
+      { id: "assignee", accessor: "assignee", header: "Assignee", minWidth: 150 },
+      {
+        id: "created", accessor: "created", header: "Created", minWidth: 110,
+        cell: ({ value }: { value: unknown }) => (
+          <span style={{ display: "flex", alignItems: "center", height: "100%" }}>
+            {value ? String(value).substring(0, 10) : "—"}
+          </span>
+        ),
+      },
+    ],
+    [],
+  );
+
+  const detailRecords = detailData?.records ?? [];
+
   return card(
     <>
-      <Heading level={4}>Work in Progress</Heading>
-      <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>Active stories by team and status — high WIP can indicate bottlenecks.</Paragraph>
+      <Flex justifyContent="space-between" alignItems="center">
+        <Flex flexDirection="column" gap={4}>
+          <Heading level={4}>Work in Progress</Heading>
+          <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>Active stories by team and status — high WIP can indicate bottlenecks.</Paragraph>
+        </Flex>
+        <button
+          onClick={() => setShowDetail(!showDetail)}
+          style={{
+            padding: "6px 12px", fontSize: 12, fontWeight: 500, cursor: "pointer",
+            borderRadius: 6, border: `1px solid ${Colors.Charts.Apdex.Good.Default}`,
+            color: Colors.Charts.Apdex.Good.Default, background: "transparent",
+          }}
+        >
+          {showDetail ? "Hide Stories" : `Show Stories (${detailRecords.length})`}
+        </button>
+      </Flex>
       {isLoading ? loading() : (data?.records?.length ?? 0) > 0 ? (
         <DataTable data={data?.records ?? []} columns={columns} sortable resizable>
           <DataTable.Pagination defaultPageSize={10} />
         </DataTable>
       ) : empty("No active stories")}
+      {showDetail && (
+        <Flex flexDirection="column" gap={8} style={{ marginTop: 8 }}>
+          <Heading level={5} style={{ color: Colors.Charts.Apdex.Good.Default }}>Individual Stories</Heading>
+          {detailLoading ? loading() : detailRecords.length > 0 ? (
+            <DataTable data={detailRecords} columns={detailColumns} sortable resizable>
+              <DataTable.Pagination defaultPageSize={15} />
+            </DataTable>
+          ) : empty("No active stories")}
+        </Flex>
+      )}
     </>,
   );
 }
