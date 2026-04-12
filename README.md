@@ -1,46 +1,110 @@
-# Getting Started with your Dynatrace App
+# AI-First Observer
 
-This project was bootstrapped with Dynatrace App Toolkit.
+Measures the impact of AI-First on software delivery across four pillars: **Unlock Value**, **Quality**, **Predictability**, and **Developer Experience**.
 
-It uses React in combination with TypeScript, to provide great developer experience.
+Defaults to Platform Apps (PAPA) but supports any capability via a dropdown selector.
 
-## Available Scripts
+**Live app**: [https://umsaywsjuo.dev.apps.dynatracelabs.com/ui/apps/my.ai.first.observer](https://umsaywsjuo.dev.apps.dynatracelabs.com/ui/apps/my.ai.first.observer)
 
-In the project directory, you can run:
+---
 
-### `npm run start`
+## Architecture
 
-Runs the app in the development mode. A new browser window with your running app will be automatically opened.
+```
+ui/app/
+├── config.ts              # Capability registry, scorecard config
+├── queries.ts             # All DQL queries (~20 functions)
+├── CapabilityContext.tsx   # React context for capability switching
+├── App.tsx                # Routes and layout
+├── components/
+│   └── Header.tsx         # Navigation + capability selector
+└── pages/
+    ├── Overview.tsx        # Hero KPIs with gauge rings, pillar nav cards, Juno links
+    ├── UnlockValue.tsx     # VI throughput, cycle time, pipeline
+    ├── Quality.tsx         # DER summary/split, scorecards, trend, component bugs
+    ├── Predictability.tsx  # Fix version stability, target date drift
+    └── DevExperience.tsx   # Sprint velocity, story cycle time, WIP
+```
 
-Edit a component file in `ui` and save it. The page will reload when you make changes. You may also see any errors in the console.
+## Data Sources
 
-### `npm run build`
+All data comes from daily Jira snapshots stored as business events:
 
-Builds the app for production to the `dist` folder. It correctly bundles your app in production mode and optimizes the build for the best performance.
+| Event Type | Content | Key Fields |
+|---|---|---|
+| `jira_daily.valueincrement` | Value Increments | `owning Program`, `status`, `fixVersions`, `created`, `resolutiondate` |
+| `jira_daily.bug` | Bugs | `project`, `Found in` (DEV/SPRINT/PRODUCTION), `Support-triggered` |
+| `jira_daily.story` | Stories | `project`, `Sprint`, `Story Points`, `Team` |
 
-### `npm run deploy`
+Each event type produces one record per issue per day, enabling change detection (fix version changes, target date drift) by comparing daily snapshots.
 
-Builds the app and deploys it to the specified environment in `app.config.json`.
+## Adding a New Capability
 
-### `npm run uninstall
+Edit `ui/app/config.ts` and add an entry to the `CAPABILITIES` record:
 
-Uninstalls the app from the specified environment in `app.config.json`.
+```typescript
+MY_CAP: {
+  label: "My Capability",
+  viProgram: "My Capability",         // matches `owning Program` in jira_daily.valueincrement
+  bugProject: "My Capability",        // matches `project` in jira_daily.bug / jira_daily.story
+  junoCatalogUrl: "https://juno.internal.dynatrace.com/catalog/capability/group/my-capability",
+  scorecardAssets: [                   // optional — links to quality dashboard scorecards
+    { label: "Component A", asset: "component-a" },
+    { label: "Component B", asset: "some.app.id" },
+  ],
+  junoLinks: [                         // optional — Juno catalog pages without a scorecard
+    { label: "My SDK", url: "https://juno.internal.dynatrace.com/catalog/default/system/my-sdk" },
+  ],
+},
+```
 
-### `npm run generate:function`
+### Scorecard Configuration
 
-Generates a new serverless function for your app in the `api` folder.
+Component scorecards link to a shared quality dashboard on `dre63214.apps.dynatrace.com`. Each component is identified by a `vfilter_asset` slug.
 
-### `npm run update`
+**Finding the asset slug**: Open the scorecard dashboard for your component in the browser. The URL will contain `vfilter_asset=<slug>` — that slug is what goes in the `asset` field.
 
-Updates @dynatrace-scoped packages to the latest version and applies automatic migrations.
+**URL pattern**:
+```
+https://dre63214.apps.dynatrace.com/ui/apps/dynatrace.dashboards/dashboard/
+  monaco-643204c8-ddb7-3891-9842-063f1dc1b1cf
+  #from=now()-14d&to=now()&vfilter_assetVersion=summary&vfilter_asset={asset}
+```
 
-### `npm run info`
+The `scorecardUrl()` helper in `config.ts` generates these URLs automatically.
 
-Outputs the CLI and environment information.
+**Current PAPA scorecards** (9 components):
 
-### `npm run help`
+| Component | Asset Slug |
+|---|---|
+| Dashboards | `dashboards` |
+| Dashboards CLI | `dashboard-cli` |
+| AppShell | `app-shell` |
+| Intent Explorer | `dynatrace.intent.explorer-app` |
+| Onion Logs | `dynatrace.onion.logs-app` |
+| Launcher | `launcher` |
+| Notebooks | `notebooks` |
+| Search Service | `search-service` |
+| SmartScape App | `dynatrace.smartscape-app` |
 
-Outputs help for the Dynatrace App Toolkit.
+**Juno catalog links** (no scorecard dashboard, linked to Juno directly):
+
+| Component | Type |
+|---|---|
+| Data Exploration | SDK system page |
+| DQL Builder | SDK component page |
+
+### DER Customer Split
+
+Production bugs are split into **Customer-Escalated** (Support-triggered = true) and **Internally Discovered** using the `Support-triggered` field on Jira bug records. This differentiates bugs that reached customers from those caught internally in production.
+
+## Development
+
+```bash
+npm run start     # Dev server with hot reload
+npm run build     # Production build
+npm run deploy    # Build + deploy to environment in app.config.json
+```
 
 ## Learn more
 
