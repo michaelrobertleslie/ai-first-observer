@@ -16,6 +16,7 @@ import {
   targetDateDriftQuery,
   deliveryAccuracyQuery,
   unplannedVisQuery,
+  predictabilityTrendQuery,
 } from "../queries";
 
 type Col = DataTableColumnDef<ResultRecord>;
@@ -34,6 +35,33 @@ function loading() {
 
 function empty(msg: string) {
   return <Paragraph style={{ opacity: 0.5 }}>{msg}</Paragraph>;
+}
+
+/* ── Monthly predictability trend ───────────────────── */
+function PredictabilityTrend() {
+  const { capability } = useCapability();
+  const { data, isLoading } = useDql({ query: predictabilityTrendQuery(capability) });
+
+  const chartData = useMemo(() => {
+    return (data?.records ?? []).map((r) => ({
+      category: String(r.month ?? ""),
+      value: Number(r.churn_pct) || 0,
+    }));
+  }, [data]);
+
+  return card(
+    <>
+      <Heading level={4}>Fix Version Churn Rate (12-month trend)</Heading>
+      <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
+        % of active VIs whose fix version changed each month. Lower is better — declining trend means improving predictability.
+      </Paragraph>
+      {isLoading ? loading() : chartData.length > 0 ? (
+        <CategoricalBarChart data={chartData}>
+          <CategoricalBarChart.Legend hidden />
+        </CategoricalBarChart>
+      ) : empty("No trend data available")}
+    </>,
+  );
 }
 
 /* ── Recent fixVersion changes ──────────────────────── */
@@ -279,6 +307,7 @@ export const Predictability = () => {
       <Paragraph style={{ opacity: 0.6 }}>
         How often do delivery commitments shift? Tracking fix version stability and target date drift for {capability.label}.
       </Paragraph>
+      <PredictabilityTrend />
       <RecentFixVersionChanges />
       <FixVersionStability />
       <TargetDateDrift />

@@ -211,6 +211,23 @@ export function targetDateDriftQuery(cap: Capability): string {
 | sort date_changes desc`;
 }
 
+/** Predictability trend — monthly fix version churn rate (12 months).
+ *  For each month, count how many distinct VIs had their fixVersion change
+ *  vs total active VIs. Lower = more predictable. */
+export function predictabilityTrendQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 365d
+| filter event.type == "jira_daily.valueincrement"
+  AND \`owning Program\` == "${cap.viProgram}"
+  AND in(status, "Implementation", "Ready for Implementation", "Release Preparation", "Closed", "Post GA")
+| fieldsAdd month = formatTimestamp(timestamp, format: "yyyy-MM")
+| sort timestamp asc
+| summarize versions_seen = collectDistinct(fixVersions), snapshot_count = count(), by: {key, month}
+| fieldsAdd changed = if(arraySize(versions_seen) > 1, 1, else: 0)
+| summarize total_vis = countDistinct(key), changed_vis = sum(changed), by: {month}
+| fieldsAdd churn_pct = 100.0 * toDouble(changed_vis) / toDouble(total_vis)
+| sort month asc`;
+}
+
 /** Delivery accuracy: VIs closed by fix version (chronological, excludes Unplanned) */
 export function deliveryAccuracyQuery(cap: Capability): string {
   return `fetch bizevents, from: now() - 365d
