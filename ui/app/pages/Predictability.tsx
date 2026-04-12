@@ -195,10 +195,16 @@ function DeliveryByVersion() {
   const [showUnplanned, setShowUnplanned] = useState(false);
 
   const chartData = useMemo(
-    () => (data?.records ?? []).map((r) => ({
-      category: String(r.fixVersions ?? "Unset"),
-      value: Number(r.vi_count) || 0,
-    })),
+    () => {
+      const MONTHS: Record<string, number> = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+      const parsed = (data?.records ?? []).map((r) => {
+        const name = String(r.fixVersions ?? "Unset");
+        const parts = name.match(/^(\w+)\s+(\d{4})$/);
+        const sortKey = parts ? Number(parts[2]) * 12 + (MONTHS[parts[1]] ?? 0) : -1;
+        return { category: name, value: Number(r.vi_count) || 0, sortKey };
+      });
+      return parsed.sort((a, b) => b.sortKey - a.sortKey);
+    },
     [data],
   );
 

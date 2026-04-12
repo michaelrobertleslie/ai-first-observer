@@ -305,7 +305,10 @@ export function derRollingQuarterQuery(cap: Capability): string {
 | filter event.type == "jira_daily.bug"
   AND project == "${cap.bugProject}"
   AND isNotNull(\`Found in\`) AND \`Found in\` != ""
+  AND isNotNull(created)
 | dedup key
+| fieldsAdd created_ts = toTimestamp(created)
+| filter created_ts >= now() - 90d
 | summarize bug_count = count(), by: {\`Found in\`}
 | sort bug_count desc`;
 }
@@ -316,7 +319,10 @@ export function derCustomerSplitRollingQuery(cap: Capability): string {
 | filter event.type == "jira_daily.bug"
   AND project == "${cap.bugProject}"
   AND \`Found in\` == "PRODUCTION"
+  AND isNotNull(created)
 | dedup key
+| fieldsAdd created_ts = toTimestamp(created)
+| filter created_ts >= now() - 90d
 | fieldsAdd source = if(\`Support-triggered\` == "true", "Customer-Escalated", else: "Internally Discovered")
 | summarize bug_count = count(), by: {source}
 | sort bug_count desc`;
@@ -346,7 +352,9 @@ export function storyPointsPerViQuery(cap: Capability): string {
   AND isNotNull(\`Story Points\`)
   AND isNotNull(resolutiondate)
 | dedup key
-| fieldsAdd month = formatTimestamp(toTimestamp(resolutiondate), format: "yyyy-MM")
+| fieldsAdd resolved_ts = toTimestamp(resolutiondate)
+| filter resolved_ts >= now() - 365d
+| fieldsAdd month = formatTimestamp(resolved_ts, format: "yyyy-MM")
 | summarize total_points = sum(\`Story Points\`), stories = count(), by: {month}
 | sort month asc`;
 }

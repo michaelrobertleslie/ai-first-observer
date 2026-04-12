@@ -239,7 +239,7 @@ function RecentProdBugs() {
           const color = isCust ? Colors.Charts.Apdex.Unacceptable.Default : Colors.Charts.Apdex.Fair.Default;
           const label = isCust ? "Customer" : "Internal";
           return (
-            <span style={{ display: "flex", alignItems: "center", height: "100%" }}>
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
               <span style={{
                 display: "inline-flex", alignItems: "center", gap: 4,
                 padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600,
