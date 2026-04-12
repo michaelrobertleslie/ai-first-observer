@@ -84,22 +84,20 @@ function qoqTrend(
   return delta > 0 ? "up" : "down";
 }
 
-const TREND_ICONS: Record<string, { symbol: string; label: string }> = {
-  up: { symbol: "▲", label: "Improving" },
-  down: { symbol: "▼", label: "Declining" },
-  flat: { symbol: "►", label: "Stable" },
-};
+const TREND_SYMBOLS: Record<string, string> = { up: "▲", down: "▼", flat: "►" };
 
 function PillarCard({ n, title, desc, metric, route, color, trend, trendGood }: {
   n: string; title: string; desc: string; metric: string; route: string; color: string;
   trend?: "up" | "down" | "flat"; trendGood?: "up" | "down";
 }) {
+  const isGood = trend === trendGood;
   const trendColor = !trend || trend === "flat"
     ? Colors.Charts.Apdex.Fair.Default
-    : trend === trendGood
+    : isGood
       ? Colors.Charts.Apdex.Good.Default
       : Colors.Charts.Apdex.Poor.Default;
-  const ti = trend ? TREND_ICONS[trend] : undefined;
+  const label = !trend || trend === "flat" ? "Stable" : isGood ? "Improving" : "Declining";
+  const symbol = trend ? TREND_SYMBOLS[trend] : undefined;
   return (
     <Link to={route} style={{ textDecoration: "none", flex: "1 1 220px", minWidth: 220 }}>
       <Surface style={{ height: "100%", cursor: "pointer", borderTop: `3px solid ${color}` }}>
@@ -107,10 +105,10 @@ function PillarCard({ n, title, desc, metric, route, color, trend, trendGood }: 
           <Flex gap={8} alignItems="center">
             <span style={{ fontSize: 20, fontWeight: 800, color, lineHeight: 1 }}>{n}</span>
             <Heading level={5}>{title}</Heading>
-            {ti && (
+            {symbol && (
               <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, color: trendColor }}
-                title={`Quarter-over-quarter: ${ti.label}`}>
-                {ti.symbol} {ti.label}
+                title={`Quarter-over-quarter: ${label}`}>
+                {symbol} {label}
               </span>
             )}
           </Flex>
