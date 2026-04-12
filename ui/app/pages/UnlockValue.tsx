@@ -52,12 +52,18 @@ function ProductivityKpis() {
   const prev4 = qRecs.slice(-8, -4).reduce((s, r) => s + (Number(r.vi_count) || 0), 0);
   const yoyPct = prev4 > 0 ? ((last4 - prev4) / prev4 * 100) : 0;
 
+  // Current calendar quarter start (for JQL link)
+  const now = new Date();
+  const qStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+  const qStartStr = qStart.toISOString().substring(0, 10);
+  const latestQLabel = qRecs.length > 0 ? String(qRecs[qRecs.length - 1]?.quarter_label ?? "") : "";
+
   const anyLoading = cycle.isLoading || quarterly.isLoading;
 
   const kpis = [
     { label: "VIs Closed (12 mo)", value: rec ? String(rec.total_closed) : "—", color: Colors.Charts.Apdex.Excellent.Default, href: jiraSearchUrl(`"owning Program" = "${capability.viProgram}" AND type = ValueIncrement AND status = Closed AND resolved >= -365d ORDER BY resolved DESC`) },
     { label: "Median Cycle Time", value: rec ? `${Math.round(Number(rec.p50_days))}d` : "—", color: Number(rec?.p50_days) > 90 ? Colors.Charts.Apdex.Poor.Default : Colors.Charts.Apdex.Good.Default, href: jiraSearchUrl(`"owning Program" = "${capability.viProgram}" AND type = ValueIncrement AND status = Closed AND resolved >= -365d ORDER BY resolved DESC`) },
-    { label: "Latest Quarter", value: `${latestQ} VIs`, color: qoqPct > 0 ? Colors.Charts.Apdex.Excellent.Default : Colors.Charts.Apdex.Poor.Default, sub: `${qoqPct >= 0 ? "+" : ""}${qoqPct.toFixed(0)}% QoQ`, href: jiraSearchUrl(`"owning Program" = "${capability.viProgram}" AND type = ValueIncrement AND status = Closed AND resolved >= -90d ORDER BY resolved DESC`) },
+    { label: `Latest Quarter (${latestQLabel})`, value: `${latestQ} VIs`, color: qoqPct > 0 ? Colors.Charts.Apdex.Excellent.Default : Colors.Charts.Apdex.Poor.Default, sub: `${qoqPct >= 0 ? "+" : ""}${qoqPct.toFixed(0)}% QoQ`, href: jiraSearchUrl(`"owning Program" = "${capability.viProgram}" AND type = ValueIncrement AND status = Closed AND resolved >= "${qStartStr}" ORDER BY resolved DESC`) },
     { label: "Year-over-Year", value: `${yoyPct >= 0 ? "+" : ""}${yoyPct.toFixed(0)}%`, color: yoyPct > 0 ? Colors.Charts.Apdex.Excellent.Default : Colors.Charts.Apdex.Poor.Default, sub: `${last4} vs ${prev4} VIs`, href: jiraSearchUrl(`"owning Program" = "${capability.viProgram}" AND type = ValueIncrement AND status = Closed ORDER BY resolved DESC`) },
   ];
 
