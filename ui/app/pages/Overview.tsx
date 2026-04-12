@@ -113,13 +113,19 @@ export const Overview = () => {
   return (
     <Flex flexDirection="column" gap={20} padding={16}>
       {/* ── Hero banner ─────────────────────────────── */}
-      <Surface style={{ width: "100%", background: "linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(20,184,166,0.06) 100%)" }}>
-        <Flex flexDirection="column" gap={4} padding={32}>
-          <Heading level={1}>AI-First Observer</Heading>
-          <Paragraph style={{ opacity: 0.5, fontSize: 14, maxWidth: 700 }}>
-            Measuring the impact of AI-First on software delivery for <strong>{capability.label}</strong>.
-            Baseline today, benchmark tomorrow.
+      <Surface style={{ width: "100%", background: "linear-gradient(135deg, rgba(99,102,241,0.10) 0%, rgba(20,184,166,0.08) 100%)" }}>
+        <Flex flexDirection="column" gap={12} padding={32}>
+          <Heading level={1} style={{ fontSize: 28, letterSpacing: -0.5 }}>
+            AI-First Observer — {capability.label}
+          </Heading>
+          <Paragraph style={{ opacity: 0.6, fontSize: 15, lineHeight: 1.6 }}>
+            Can AI-powered engineering compress a 4-year roadmap into 1?
+            This dashboard tracks the proof — throughput acceleration, quality at scale, delivery predictability,
+            and developer experience — across {totalClosed > 0 ? `${totalClosed} Value Increments` : "every Value Increment"} delivered in the last 12 months.
           </Paragraph>
+          <Flex gap={24} style={{ marginTop: 4 }}>
+            <Paragraph style={{ opacity: 0.35, fontSize: 12 }}>Throughput · Cycle Time · Defect Escape Rate · Fix Version Stability · Sprint Velocity</Paragraph>
+          </Flex>
         </Flex>
       </Surface>
 
