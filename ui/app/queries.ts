@@ -113,6 +113,7 @@ export function prodBugsByComponentQuery(cap: Capability): string {
   AND \`Found in\` == "PRODUCTION"
 | dedup key
 | expand components_array
+| filter isNotNull(components_array) AND components_array != ""
 | summarize bug_count = count(), by: {components_array}
 | sort bug_count desc
 | limit 15`;
@@ -150,7 +151,9 @@ export function derSplitTrendQuery(cap: Capability): string {
   AND isNotNull(created)
   AND isNotNull(\`Found in\`) AND \`Found in\` != ""
 | dedup key
-| fieldsAdd month = formatTimestamp(toTimestamp(created), format: "yyyy-MM")
+| fieldsAdd created_ts = toTimestamp(created)
+| filter created_ts >= now() - 365d
+| fieldsAdd month = formatTimestamp(created_ts, format: "yyyy-MM")
 | fieldsAdd is_prod = if(\`Found in\` == "PRODUCTION", 1, else: 0)
 | fieldsAdd is_customer = if(\`Found in\` == "PRODUCTION" AND \`Support-triggered\` == "true", 1, else: 0)
 | summarize total = count(), prod_count = sum(is_prod), customer_count = sum(is_customer), by: {month}
@@ -208,7 +211,7 @@ export function targetDateDriftQuery(cap: Capability): string {
 | sort date_changes desc`;
 }
 
-/** Delivery accuracy: VIs closed by fix version (newest first, excludes Unplanned) */
+/** Delivery accuracy: VIs closed by fix version (chronological, excludes Unplanned) */
 export function deliveryAccuracyQuery(cap: Capability): string {
   return `fetch bizevents, from: now() - 365d
 | filter event.type == "jira_daily.valueincrement"
@@ -219,8 +222,8 @@ export function deliveryAccuracyQuery(cap: Capability): string {
 | dedup key
 | fieldsAdd resolved_ts = toTimestamp(resolutiondate)
 | filter resolved_ts >= now() - 365d
-| summarize vi_count = count(), by: {fixVersions}
-| sort fixVersions desc
+| summarize vi_count = count(), latest_resolved = max(resolved_ts), by: {fixVersions}
+| sort latest_resolved desc
 | limit 20`;
 }
 
