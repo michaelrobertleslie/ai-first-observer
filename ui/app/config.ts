@@ -41,6 +41,11 @@ export function jiraUrl(key: string): string {
   return `https://jira.internal.dynatrace.com/browse/${encodeURIComponent(key)}`;
 }
 
+/** Build a Jira JQL search URL */
+export function jiraSearchUrl(jql: string): string {
+  return `https://jira.internal.dynatrace.com/issues/?jql=${encodeURIComponent(jql)}`;
+}
+
 /** Registry of known capabilities */
 export const CAPABILITIES: Record<string, Capability> = {
   PAPA: {

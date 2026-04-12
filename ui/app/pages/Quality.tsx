@@ -11,9 +11,9 @@ import Colors from "@dynatrace/strato-design-tokens/colors";
 import { useCapability } from "../CapabilityContext";
 import { scorecardUrl, jiraUrl } from "../config";
 import {
-  derSummaryQuery,
+  derRollingQuarterQuery,
   derSplitTrendQuery,
-  derCustomerSplitQuery,
+  derCustomerSplitRollingQuery,
   prodBugsByComponentQuery,
   recentProdBugsQuery,
 } from "../queries";
@@ -39,8 +39,8 @@ function empty(msg: string) {
 /* ── DER overview with customer-escalation split ────── */
 function DerSummary() {
   const { capability } = useCapability();
-  const { data, isLoading } = useDql({ query: derSummaryQuery(capability) });
-  const { data: splitData, isLoading: splitLoading } = useDql({ query: derCustomerSplitQuery(capability) });
+  const { data, isLoading } = useDql({ query: derRollingQuarterQuery(capability) });
+  const { data: splitData, isLoading: splitLoading } = useDql({ query: derCustomerSplitRollingQuery(capability) });
 
   const records = data?.records ?? [];
   const total = records.reduce((s, r) => s + (Number(r.bug_count) || 0), 0);
@@ -76,7 +76,7 @@ function DerSummary() {
       {/* Overall DER card */}
       <Surface style={{ flex: "0 0 200px" }}>
         <Flex flexDirection="column" gap={6} padding={24} alignItems="center">
-          <Paragraph style={{ opacity: 0.5, fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>Overall DER</Paragraph>
+          <Paragraph style={{ opacity: 0.5, fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>Overall DER (90d)</Paragraph>
           {anyLoad ? <ProgressCircle /> : (
             <>
               <Heading level={1} style={{ color: derPct > 20 ? Colors.Charts.Apdex.Unacceptable.Default : derPct > 5 ? Colors.Charts.Apdex.Poor.Default : Colors.Charts.Apdex.Good.Default }}>
@@ -169,8 +169,8 @@ function DerTrend() {
 
   return card(
     <>
-      <Heading level={4}>DER Trend (monthly, 24 months)</Heading>
-      <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>Overall DER % and customer-escalated DER % per month over 2 years.</Paragraph>
+      <Heading level={4}>DER Trend (monthly, 12 months)</Heading>
+      <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>Overall DER % and customer-escalated DER % per month.</Paragraph>
       {isLoading ? loading() : chartData.length > 0 ? (
         <Flex flexDirection="column" gap={16}>
           <Flex flexDirection="column" gap={4}>
@@ -232,11 +232,30 @@ function RecentProdBugs() {
           </a>
         ),
       },
-      { id: "summary", accessor: "summary", header: "Summary", minWidth: 300 },
-      { id: "status", accessor: "status", header: "Status", minWidth: 120 },
-      { id: "assignee", accessor: "assignee", header: "Assignee", minWidth: 150 },
       {
-        id: "created", accessor: "created", header: "Created", minWidth: 120,
+        id: "source", accessor: "Support-triggered", header: "Source", minWidth: 130,
+        cell: ({ value }: { value: unknown }) => {
+          const isCust = String(value) === "true";
+          const color = isCust ? Colors.Charts.Apdex.Unacceptable.Default : Colors.Charts.Apdex.Fair.Default;
+          const label = isCust ? "Customer" : "Internal";
+          return (
+            <span style={{
+              display: "inline-flex", alignItems: "center", gap: 4, height: "100%",
+              padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600,
+              border: `1px solid ${color}`, color,
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: color }} />
+              {label}
+            </span>
+          );
+        },
+      },
+      { id: "summary", accessor: "summary", header: "Summary", minWidth: 280 },
+      { id: "status", accessor: "status", header: "Status", minWidth: 110 },
+      { id: "components_array", accessor: "components_array", header: "Component", minWidth: 140 },
+      { id: "assignee", accessor: "assignee", header: "Assignee", minWidth: 140 },
+      {
+        id: "created", accessor: "created", header: "Created", minWidth: 100,
         cell: ({ value }: { value: unknown }) => (
           <span style={{ display: "flex", alignItems: "center", height: "100%" }}>
             {value ? String(value).substring(0, 10) : "—"}
@@ -295,7 +314,7 @@ export const Quality = () => {
     <Flex flexDirection="column" gap={16} padding={16}>
       <Heading level={2}>Pillar 2: Quality</Heading>
       <Paragraph style={{ opacity: 0.6 }}>
-        Defect Escape Rate — what percentage of bugs are found in production? Target: &lt; 5%. Tracking for {capability.label}.
+        Defect Escape Rate (rolling 90 days) — what percentage of bugs are found in production? Target: &lt; 5%. Tracking for {capability.label}.
       </Paragraph>
       <DerSummary />
       <Scorecards />

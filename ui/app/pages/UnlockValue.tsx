@@ -7,6 +7,7 @@ import { useDql } from "@dynatrace-sdk/react-hooks";
 import { ProgressCircle } from "@dynatrace/strato-components/content";
 import Colors from "@dynatrace/strato-design-tokens/colors";
 import { useCapability } from "../CapabilityContext";
+import { jiraSearchUrl } from "../config";
 import {
   viThroughputTrendQuery,
   viCycleTimeQuery,
@@ -54,22 +55,25 @@ function ProductivityKpis() {
   const anyLoading = cycle.isLoading || quarterly.isLoading;
 
   const kpis = [
-    { label: "VIs Closed (12 mo)", value: rec ? String(rec.total_closed) : "—", color: Colors.Charts.Apdex.Excellent.Default },
-    { label: "Median Cycle Time", value: rec ? `${Math.round(Number(rec.p50_days))}d` : "—", color: Number(rec?.p50_days) > 90 ? Colors.Charts.Apdex.Poor.Default : Colors.Charts.Apdex.Good.Default },
-    { label: "Latest Quarter", value: `${latestQ} VIs`, color: qoqPct > 0 ? Colors.Charts.Apdex.Excellent.Default : Colors.Charts.Apdex.Poor.Default, sub: `${qoqPct >= 0 ? "+" : ""}${qoqPct.toFixed(0)}% QoQ` },
-    { label: "Year-over-Year", value: `${yoyPct >= 0 ? "+" : ""}${yoyPct.toFixed(0)}%`, color: yoyPct > 0 ? Colors.Charts.Apdex.Excellent.Default : Colors.Charts.Apdex.Poor.Default, sub: `${last4} vs ${prev4} VIs` },
+    { label: "VIs Closed (12 mo)", value: rec ? String(rec.total_closed) : "—", color: Colors.Charts.Apdex.Excellent.Default, href: jiraSearchUrl(`"owning Program" = "${capability.viProgram}" AND type = "Value Increment" AND status = Closed AND resolved >= -365d ORDER BY resolved DESC`) },
+    { label: "Median Cycle Time", value: rec ? `${Math.round(Number(rec.p50_days))}d` : "—", color: Number(rec?.p50_days) > 90 ? Colors.Charts.Apdex.Poor.Default : Colors.Charts.Apdex.Good.Default, href: jiraSearchUrl(`"owning Program" = "${capability.viProgram}" AND type = "Value Increment" AND status = Closed AND resolved >= -365d ORDER BY resolved DESC`) },
+    { label: "Latest Quarter", value: `${latestQ} VIs`, color: qoqPct > 0 ? Colors.Charts.Apdex.Excellent.Default : Colors.Charts.Apdex.Poor.Default, sub: `${qoqPct >= 0 ? "+" : ""}${qoqPct.toFixed(0)}% QoQ`, href: jiraSearchUrl(`"owning Program" = "${capability.viProgram}" AND type = "Value Increment" AND status = Closed AND resolved >= -90d ORDER BY resolved DESC`) },
+    { label: "Year-over-Year", value: `${yoyPct >= 0 ? "+" : ""}${yoyPct.toFixed(0)}%`, color: yoyPct > 0 ? Colors.Charts.Apdex.Excellent.Default : Colors.Charts.Apdex.Poor.Default, sub: `${last4} vs ${prev4} VIs`, href: jiraSearchUrl(`"owning Program" = "${capability.viProgram}" AND type = "Value Increment" AND status = Closed ORDER BY resolved DESC`) },
   ];
 
   return (
     <Flex gap={16} flexFlow="wrap" style={{ width: "100%" }}>
-      {anyLoading ? <Flex justifyContent="center" padding={48} style={{ width: "100%" }}><ProgressCircle /></Flex> : kpis.map(({ label, value, color, sub }) => (
-        <Surface key={label} style={{ flex: "1 1 200px", minWidth: 200, borderTop: `3px solid ${color}` }}>
-          <Flex flexDirection="column" gap={4} padding={20} alignItems="center">
-            <Paragraph style={{ opacity: 0.5, fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>{label}</Paragraph>
-            <Heading level={2} style={{ color }}>{value}</Heading>
-            {sub && <Paragraph style={{ opacity: 0.5, fontSize: 11 }}>{sub}</Paragraph>}
-          </Flex>
-        </Surface>
+      {anyLoading ? <Flex justifyContent="center" padding={48} style={{ width: "100%" }}><ProgressCircle /></Flex> : kpis.map(({ label, value, color, sub, href }) => (
+        <a key={label} href={href} target="_blank" rel="noopener noreferrer" style={{ flex: "1 1 200px", minWidth: 200, textDecoration: "none", color: "inherit" }}>
+          <Surface style={{ height: "100%", borderTop: `3px solid ${color}`, cursor: "pointer" }}>
+            <Flex flexDirection="column" gap={4} padding={20} alignItems="center">
+              <Paragraph style={{ opacity: 0.5, fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>{label}</Paragraph>
+              <Heading level={2} style={{ color }}>{value}</Heading>
+              {sub && <Paragraph style={{ opacity: 0.5, fontSize: 11 }}>{sub}</Paragraph>}
+              <Paragraph style={{ opacity: 0.3, fontSize: 10 }}>View in Jira ↗</Paragraph>
+            </Flex>
+          </Surface>
+        </a>
       ))}
     </Flex>
   );

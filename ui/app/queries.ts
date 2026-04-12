@@ -13,7 +13,7 @@ import type { Capability } from "./config";
    PILLAR 1 — UNLOCK VALUE (Throughput & Cycle Time)
    ═══════════════════════════════════════════════════════════════ */
 
-/** VIs closed per month (throughput trend, last 12 months) */
+/** VIs closed per month (throughput trend, last 12 months — filtered by resolution date) */
 export function viThroughputTrendQuery(cap: Capability): string {
   return `fetch bizevents, from: now() - 365d
 | filter event.type == "jira_daily.valueincrement"
@@ -22,6 +22,7 @@ export function viThroughputTrendQuery(cap: Capability): string {
   AND isNotNull(resolutiondate)
 | dedup key
 | fieldsAdd resolved_ts = toTimestamp(resolutiondate)
+| filter resolved_ts >= now() - 365d
 | fieldsAdd month = formatTimestamp(resolved_ts, format: "yyyy-MM")
 | summarize vi_count = count(), by: {month}
 | sort month asc`;
@@ -53,12 +54,12 @@ export function viCycleTimeTrendQuery(cap: Capability): string {
 | sort month asc`;
 }
 
-/** VI pipeline — current status breakdown */
+/** VI pipeline — current status breakdown (active only) */
 export function viPipelineQuery(cap: Capability): string {
   return `fetch bizevents, from: now() - 1d
 | filter event.type == "jira_daily.valueincrement"
   AND \`owning Program\` == "${cap.viProgram}"
-  AND status != "Cancelled"
+  AND status != "Cancelled" AND status != "Closed"
 | dedup key
 | summarize count = count(), by: {status}
 | sort count desc`;
@@ -79,11 +80,12 @@ export function activeVisQuery(cap: Capability): string {
    PILLAR 2 — QUALITY (Defect Escape Rate)
    ═══════════════════════════════════════════════════════════════ */
 
-/** DER summary — unique bugs by "Found in" category */
+/** DER summary — unique bugs by "Found in" category (excludes unset) */
 export function derSummaryQuery(cap: Capability): string {
   return `fetch bizevents, from: now() - 365d
 | filter event.type == "jira_daily.bug"
   AND project == "${cap.bugProject}"
+  AND isNotNull(\`Found in\`) AND \`Found in\` != ""
 | dedup key
 | summarize bug_count = count(), by: {\`Found in\`}
 | sort bug_count desc`;
@@ -116,14 +118,14 @@ export function prodBugsByComponentQuery(cap: Capability): string {
 | limit 15`;
 }
 
-/** Recent production bugs (last 90 days) */
+/** Recent production bugs (last 90 days) with escalation source */
 export function recentProdBugsQuery(cap: Capability): string {
   return `fetch bizevents, from: now() - 90d
 | filter event.type == "jira_daily.bug"
   AND project == "${cap.bugProject}"
   AND \`Found in\` == "PRODUCTION"
 | dedup key
-| fields key, summary, status, assignee, created, resolution
+| fields key, summary, status, \`Support-triggered\`, components_array, assignee, created, resolution
 | sort created desc
 | limit 50`;
 }
@@ -140,12 +142,13 @@ export function derCustomerSplitQuery(cap: Capability): string {
 | sort bug_count desc`;
 }
 
-/** DER trend with customer-escalation split per month */
+/** DER trend with customer-escalation split per month (12 months) */
 export function derSplitTrendQuery(cap: Capability): string {
-  return `fetch bizevents, from: now() - 730d
+  return `fetch bizevents, from: now() - 365d
 | filter event.type == "jira_daily.bug"
   AND project == "${cap.bugProject}"
   AND isNotNull(created)
+  AND isNotNull(\`Found in\`) AND \`Found in\` != ""
 | dedup key
 | fieldsAdd month = formatTimestamp(toTimestamp(created), format: "yyyy-MM")
 | fieldsAdd is_prod = if(\`Found in\` == "PRODUCTION", 1, else: 0)
@@ -205,17 +208,34 @@ export function targetDateDriftQuery(cap: Capability): string {
 | sort date_changes desc`;
 }
 
-/** Delivery accuracy: VIs closed within their target fixVersion */
+/** Delivery accuracy: VIs closed by fix version (newest first, excludes Unplanned) */
 export function deliveryAccuracyQuery(cap: Capability): string {
   return `fetch bizevents, from: now() - 365d
 | filter event.type == "jira_daily.valueincrement"
   AND \`owning Program\` == "${cap.viProgram}"
   AND status == "Closed"
   AND isNotNull(fixVersions)
+  AND NOT contains(fixVersions, "nplanned")
 | dedup key
+| fieldsAdd resolved_ts = toTimestamp(resolutiondate)
+| filter resolved_ts >= now() - 365d
 | summarize vi_count = count(), by: {fixVersions}
 | sort fixVersions desc
 | limit 20`;
+}
+
+/** Unplanned VIs — closed VIs with 'Unplanned' in fixVersions */
+export function unplannedVisQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 365d
+| filter event.type == "jira_daily.valueincrement"
+  AND \`owning Program\` == "${cap.viProgram}"
+  AND status == "Closed"
+  AND isNotNull(fixVersions)
+  AND contains(fixVersions, "nplanned")
+| dedup key
+| fields key, summary, fixVersions, resolutiondate
+| sort resolutiondate desc
+| limit 50`;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -235,9 +255,9 @@ export function storyVelocityQuery(cap: Capability): string {
 | limit 20`;
 }
 
-/** Story cycle time trend — average days from created to closed, per month */
+/** Story cycle time trend — average days from created to closed, per month (6 months) */
 export function storyCycleTimeTrendQuery(cap: Capability): string {
-  return `fetch bizevents, from: now() - 365d
+  return `fetch bizevents, from: now() - 180d
 | filter event.type == "jira_daily.story"
   AND project == "${cap.bugProject}"
   AND status == "Closed"
@@ -276,11 +296,12 @@ export function baselineSummaryQuery(cap: Capability): string {
 | summarize total_closed = count(), avg_cycle_days = avg(cycle_days), p50_cycle_days = percentile(cycle_days, 50), p90_cycle_days = percentile(cycle_days, 90)`;
 }
 
-/** DER for rolling quarter (90 days) */
+/** DER for rolling quarter (90 days, excludes unset) */
 export function derRollingQuarterQuery(cap: Capability): string {
   return `fetch bizevents, from: now() - 90d
 | filter event.type == "jira_daily.bug"
   AND project == "${cap.bugProject}"
+  AND isNotNull(\`Found in\`) AND \`Found in\` != ""
 | dedup key
 | summarize bug_count = count(), by: {\`Found in\`}
 | sort bug_count desc`;

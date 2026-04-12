@@ -3,7 +3,7 @@
   "environmentUrl": "https://umsaywsjuo.dev.apps.dynatracelabs.com/",
   "app": {
     "name": "AI-First Observer",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "description": "Measure AI-First impact on velocity, quality, and predictability",
     "id": "my.ai.first.observer",
     "scopes": [

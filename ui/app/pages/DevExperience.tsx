@@ -103,8 +103,8 @@ function StoryCycleTime() {
 
   return card(
     <>
-      <Heading level={4}>Story Cycle Time Trend (monthly)</Heading>
-      <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>Average days from creation to close — is AI tooling reducing friction?</Paragraph>
+      <Heading level={4}>Story Cycle Time Trend (6 months)</Heading>
+      <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>Average and median days from creation to close — is AI tooling reducing friction?</Paragraph>
       {isLoading ? loading() : avgData.length > 0 ? (
         <Flex flexDirection="column" gap={16}>
           <Flex flexDirection="column" gap={4}>

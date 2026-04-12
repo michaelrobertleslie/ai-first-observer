@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Flex } from "@dynatrace/strato-components/layouts";
 import { Surface } from "@dynatrace/strato-components/layouts";
 import { Heading, Paragraph } from "@dynatrace/strato-components/typography";
@@ -15,6 +15,7 @@ import {
   fixVersionStability30dQuery,
   targetDateDriftQuery,
   deliveryAccuracyQuery,
+  unplannedVisQuery,
 } from "../queries";
 
 type Col = DataTableColumnDef<ResultRecord>;
@@ -190,6 +191,8 @@ function TargetDateDrift() {
 function DeliveryByVersion() {
   const { capability } = useCapability();
   const { data, isLoading } = useDql({ query: deliveryAccuracyQuery(capability) });
+  const { data: unplannedData, isLoading: unplannedLoading } = useDql({ query: unplannedVisQuery(capability) });
+  const [showUnplanned, setShowUnplanned] = useState(false);
 
   const chartData = useMemo(
     () => (data?.records ?? []).map((r) => ({
@@ -199,14 +202,64 @@ function DeliveryByVersion() {
     [data],
   );
 
+  const unplannedRecs = unplannedData?.records ?? [];
+
+  const unplannedCols: Col[] = useMemo(
+    () => [
+      {
+        id: "key", accessor: "key", header: "Key", minWidth: 120,
+        cell: ({ value }: { value: unknown }) => (
+          <a href={jiraUrl(String(value ?? ""))} target="_blank" rel="noopener noreferrer"
+            style={{ display: "flex", alignItems: "center", height: "100%", fontWeight: 600, textDecoration: "none", color: "inherit" }}>
+            {String(value ?? "")} ↗
+          </a>
+        ),
+      },
+      { id: "summary", accessor: "summary", header: "Summary", minWidth: 280 },
+      { id: "fixVersions", accessor: "fixVersions", header: "Fix Version", minWidth: 150 },
+      {
+        id: "resolutiondate", accessor: "resolutiondate", header: "Resolved", minWidth: 110,
+        cell: ({ value }: { value: unknown }) => (
+          <span style={{ display: "flex", alignItems: "center", height: "100%" }}>
+            {value ? String(value).substring(0, 10) : "—"}
+          </span>
+        ),
+      },
+    ],
+    [],
+  );
+
   return card(
     <>
-      <Heading level={4}>Closed VIs by Fix Version (12 months)</Heading>
+      <Flex justifyContent="space-between" alignItems="center">
+        <Heading level={4}>Closed VIs by Fix Version (12 months)</Heading>
+        <button
+          onClick={() => setShowUnplanned(!showUnplanned)}
+          style={{
+            padding: "6px 12px", fontSize: 12, fontWeight: 500, cursor: "pointer",
+            borderRadius: 6, border: `1px solid ${Colors.Charts.Apdex.Fair.Default}`,
+            color: Colors.Charts.Apdex.Fair.Default, background: "transparent",
+          }}
+        >
+          {showUnplanned ? "Hide Unplanned" : `Show Unplanned (${unplannedRecs.length})`}
+        </button>
+      </Flex>
+      <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>Planned deliveries only. Click "Show Unplanned" to see VIs tagged as unplanned.</Paragraph>
       {isLoading ? loading() : chartData.length > 0 ? (
         <CategoricalBarChart data={chartData} layout="horizontal">
           <CategoricalBarChart.Legend hidden />
         </CategoricalBarChart>
       ) : empty("No data")}
+      {showUnplanned && (
+        <Flex flexDirection="column" gap={8} style={{ marginTop: 8 }}>
+          <Heading level={5} style={{ color: Colors.Charts.Apdex.Fair.Default }}>Unplanned VIs</Heading>
+          {unplannedLoading ? loading() : unplannedRecs.length > 0 ? (
+            <DataTable data={unplannedRecs} columns={unplannedCols} sortable resizable>
+              <DataTable.Pagination defaultPageSize={10} />
+            </DataTable>
+          ) : empty("No unplanned VIs found")}
+        </Flex>
+      )}
     </>,
   );
 }
