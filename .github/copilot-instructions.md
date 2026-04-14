@@ -55,7 +55,7 @@ Each pillar Overview card shows a trend indicator (↗ Improving / ↘ Declining
 Overview hero KPIs use custom SVG gauge rings. Each ring shows a percentage with color coding (green/amber/red thresholds vary by pillar).
 
 ### QueryInspector (DQL Transparency)
-Every data card has a `⟨/⟩ DQL` button (from `components/QueryInspector.tsx`) that opens a Strato `Sheet` overlay showing the raw DQL query, a copy button, and a link to Dynatrace Notebooks. Pattern: store the query string in a local variable, pass to both `useDql({ query })` and `<QueryInspector query={query} title="..." />`.
+Every data card has a `⟨/⟩ DQL` button (from `components/QueryInspector.tsx`) that opens a Strato `Sheet` overlay showing the raw DQL query, a copy button, and an "Open in Notebook" link that uses `getIntentLink({ "dt.query": query }, "dynatrace.notebooks", "view-query")` from `@dynatrace-sdk/navigation` to open Notebooks with the DQL pre-populated. Pattern: store the query string in a local variable, pass to both `useDql({ query })` and `<QueryInspector query={query} title="..." />`.
 
 ### Cycle Time Math Verification
 The cycle time card on UnlockValue shows full percentile distribution (min–max), a "Verification" section with calculation working (position in sorted set, formula), and an expandable DataTable listing every closed VI with Jira links.

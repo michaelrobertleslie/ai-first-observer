@@ -111,7 +111,7 @@ npx dt-app deploy  # Deploy to environment
 ## Environment
 
 - **App ID**: `my.ai.first.observer`
-- **Version**: 0.5.0
+- **Version**: 0.5.3
 - **Target**: `umsaywsjuo.dev.apps.dynatracelabs.com`
 
 ## Transparency Features (v0.5.0)
@@ -120,9 +120,11 @@ npx dt-app deploy  # Deploy to environment
 Every data card across all four pillar pages has a `⟨/⟩ DQL` button that opens a Strato Sheet overlay showing:
 - The exact DQL query executed against Grail
 - Copy-to-clipboard button
-- Link to open Dynatrace Notebooks for independent verification
+- "Open in Notebook" link that uses `dt.query` intents to open Dynatrace Notebooks with the DQL pre-populated
 
 Implemented in `ui/app/components/QueryInspector.tsx` — 18 cards wired across all pages.
+
+Uses `getIntentLink({ "dt.query": query }, "dynatrace.notebooks", "view-query")` from `@dynatrace-sdk/navigation`.
 
 ### Cycle Time Math Verification
 The Unlock Value cycle time card includes:
