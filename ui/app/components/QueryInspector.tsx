@@ -88,7 +88,7 @@ export function QueryInspector({
               {copied ? "✓ Copied" : "Copy to clipboard"}
             </Button>
             <a
-              href={`${getEnvironmentUrl()}ui/apps/dynatrace.notebooks/`}
+              href={`${getEnvironmentUrl()}/ui/apps/dynatrace.notebooks/`}
               target="_blank"
               rel="noopener noreferrer"
               style={{
