@@ -4,7 +4,7 @@ import { Sheet } from "@dynatrace/strato-components/overlays";
 import { Flex } from "@dynatrace/strato-components/layouts";
 import { Paragraph } from "@dynatrace/strato-components/typography";
 import Colors from "@dynatrace/strato-design-tokens/colors";
-import { getEnvironmentUrl } from "@dynatrace-sdk/app-environment";
+import { getIntentLink } from "@dynatrace-sdk/navigation";
 
 /**
  * A small "⟨/⟩ DQL" button that opens a Sheet showing the raw DQL query
@@ -88,7 +88,7 @@ export function QueryInspector({
               {copied ? "✓ Copied" : "Copy to clipboard"}
             </Button>
             <a
-              href={`${getEnvironmentUrl()}/ui/apps/dynatrace.notebooks/`}
+              href={getIntentLink({ "dt.query": query }, "dynatrace.notebooks", "view-query")}
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -106,13 +106,13 @@ export function QueryInspector({
                 gap: 4,
               }}
             >
-              Open Notebooks ↗
+              Open in Notebook ↗
             </a>
           </Flex>
 
           <Paragraph style={{ opacity: 0.35, fontSize: 11 }}>
-            Paste the DQL into a new Notebook section to run it yourself and
-            verify the results.
+            Opens a Dynatrace Notebook with this DQL query pre-loaded so you
+            can run it yourself and verify the results.
           </Paragraph>
         </Flex>
       </Sheet>
