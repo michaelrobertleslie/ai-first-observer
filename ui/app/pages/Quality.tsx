@@ -17,6 +17,7 @@ import {
   prodBugsByComponentQuery,
   recentProdBugsQuery,
 } from "../queries";
+import { QueryInspector } from "../components/QueryInspector";
 
 type Col = DataTableColumnDef<ResultRecord>;
 
@@ -149,7 +150,8 @@ function DerSummary() {
 /* ── DER trend chart (replaces table) ───────────────── */
 function DerTrend() {
   const { capability } = useCapability();
-  const { data, isLoading } = useDql({ query: derSplitTrendQuery(capability) });
+  const query = derSplitTrendQuery(capability);
+  const { data, isLoading } = useDql({ query });
 
   const chartData = useMemo(() => {
     const recs = data?.records ?? [];
@@ -169,7 +171,10 @@ function DerTrend() {
 
   return card(
     <>
-      <Heading level={4}>DER Trend (monthly, 12 months)</Heading>
+      <Flex gap={8} alignItems="center">
+        <Heading level={4}>DER Trend (monthly, 12 months)</Heading>
+        <QueryInspector query={query} title="DER Trend — DQL" />
+      </Flex>
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>Overall DER % and customer-escalated DER % per month.</Paragraph>
       {isLoading ? loading() : chartData.length > 0 ? (
         <Flex flexDirection="column" gap={16}>
@@ -194,7 +199,8 @@ function DerTrend() {
 /* ── Production bugs by component ───────────────────── */
 function ProdBugsByComponent() {
   const { capability } = useCapability();
-  const { data, isLoading } = useDql({ query: prodBugsByComponentQuery(capability) });
+  const query = prodBugsByComponentQuery(capability);
+  const { data, isLoading } = useDql({ query });
 
   const chartData = useMemo(
     () => (data?.records ?? []).map((r) => ({
@@ -206,7 +212,10 @@ function ProdBugsByComponent() {
 
   return card(
     <>
-      <Heading level={4}>Production Bugs by Component (12 months)</Heading>
+      <Flex gap={8} alignItems="center">
+        <Heading level={4}>Production Bugs by Component (12 months)</Heading>
+        <QueryInspector query={query} title="Prod Bugs by Component — DQL" />
+      </Flex>
       {isLoading ? loading() : chartData.length > 0 ? (
         <CategoricalBarChart data={chartData} layout="horizontal">
           <CategoricalBarChart.Legend hidden />
@@ -219,7 +228,8 @@ function ProdBugsByComponent() {
 /* ── Recent production bugs table ───────────────────── */
 function RecentProdBugs() {
   const { capability } = useCapability();
-  const { data, isLoading } = useDql({ query: recentProdBugsQuery(capability) });
+  const query = recentProdBugsQuery(capability);
+  const { data, isLoading } = useDql({ query });
 
   const columns: Col[] = useMemo(
     () => [
@@ -270,7 +280,10 @@ function RecentProdBugs() {
 
   return card(
     <>
-      <Heading level={4}>Recent Production Bugs (90 days)</Heading>
+      <Flex gap={8} alignItems="center">
+        <Heading level={4}>Recent Production Bugs (90 days)</Heading>
+        <QueryInspector query={query} title="Recent Production Bugs — DQL" />
+      </Flex>
       {isLoading ? loading() : (data?.records?.length ?? 0) > 0 ? (
         <DataTable data={data?.records ?? []} columns={columns} sortable resizable>
           <DataTable.Pagination defaultPageSize={10} />

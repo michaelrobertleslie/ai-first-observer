@@ -16,6 +16,7 @@ import {
   wipQuery,
   wipDetailQuery,
 } from "../queries";
+import { QueryInspector } from "../components/QueryInspector";
 
 type Col = DataTableColumnDef<ResultRecord>;
 
@@ -38,7 +39,8 @@ function empty(msg: string) {
 /* ── Sprint velocity (chart + table) ────────────────── */
 function SprintVelocity() {
   const { capability } = useCapability();
-  const { data, isLoading } = useDql({ query: storyVelocityQuery(capability) });
+  const query = storyVelocityQuery(capability);
+  const { data, isLoading } = useDql({ query });
 
   const chartData = useMemo(
     () => (data?.records ?? []).slice().reverse().map((r) => ({
@@ -58,7 +60,10 @@ function SprintVelocity() {
 
   return card(
     <>
-      <Heading level={4}>Sprint Velocity (last 90 days)</Heading>
+      <Flex gap={8} alignItems="center">
+        <Heading level={4}>Sprint Velocity (last 90 days)</Heading>
+        <QueryInspector query={query} title="Sprint Velocity — DQL" />
+      </Flex>
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>Stories closed and story points per sprint — proxy for team throughput.</Paragraph>
       {isLoading ? loading() : chartData.length > 0 ? (
         <Flex flexDirection="column" gap={16}>
@@ -83,7 +88,8 @@ function SprintVelocity() {
 /* ── Story cycle time trend (chart) ─────────────────── */
 function StoryCycleTime() {
   const { capability } = useCapability();
-  const { data, isLoading } = useDql({ query: storyCycleTimeTrendQuery(capability) });
+  const query = storyCycleTimeTrendQuery(capability);
+  const { data, isLoading } = useDql({ query });
 
   const avgData = useMemo(
     () => (data?.records ?? []).map((r) => ({
@@ -103,7 +109,10 @@ function StoryCycleTime() {
 
   return card(
     <>
-      <Heading level={4}>Story Cycle Time Trend (6 months)</Heading>
+      <Flex gap={8} alignItems="center">
+        <Heading level={4}>Story Cycle Time Trend (6 months)</Heading>
+        <QueryInspector query={query} title="Story Cycle Time — DQL" />
+      </Flex>
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>Average and median days from creation to close — is AI tooling reducing friction?</Paragraph>
       {isLoading ? loading() : avgData.length > 0 ? (
         <Flex flexDirection="column" gap={16}>
@@ -128,7 +137,8 @@ function StoryCycleTime() {
 /* ── Work in progress (expandable) ──────────────────── */
 function WorkInProgress() {
   const { capability } = useCapability();
-  const { data, isLoading } = useDql({ query: wipQuery(capability) });
+  const query = wipQuery(capability);
+  const { data, isLoading } = useDql({ query });
   const { data: detailData, isLoading: detailLoading } = useDql({ query: wipDetailQuery(capability) });
   const [showDetail, setShowDetail] = useState(false);
 
@@ -174,7 +184,10 @@ function WorkInProgress() {
     <>
       <Flex justifyContent="space-between" alignItems="center">
         <Flex flexDirection="column" gap={4}>
-          <Heading level={4}>Work in Progress</Heading>
+          <Flex gap={8} alignItems="center">
+            <Heading level={4}>Work in Progress</Heading>
+            <QueryInspector query={query} title="Work in Progress — DQL" />
+          </Flex>
           <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>Active stories by team and status — high WIP can indicate bottlenecks.</Paragraph>
         </Flex>
         <button

@@ -37,7 +37,20 @@ export function viCycleTimeQuery(cap: Capability): string {
   AND isNotNull(resolutiondate) AND isNotNull(created)
 | dedup key
 | fieldsAdd cycle_days = (toTimestamp(resolutiondate) - toTimestamp(created)) / 86400000000000
-| summarize avg_days = avg(cycle_days), p50_days = percentile(cycle_days, 50), p90_days = percentile(cycle_days, 90), total_closed = count()`;
+| summarize avg_days = avg(cycle_days), p10_days = percentile(cycle_days, 10), p25_days = percentile(cycle_days, 25), p50_days = percentile(cycle_days, 50), p75_days = percentile(cycle_days, 75), p90_days = percentile(cycle_days, 90), min_days = min(cycle_days), max_days = max(cycle_days), total_closed = count()`;
+}
+
+/** Individual VI cycle times — for detail expansion */
+export function viCycleTimeDetailQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 365d
+| filter event.type == "jira_daily.valueincrement"
+  AND \`owning Program\` == "${cap.viProgram}"
+  AND status == "Closed"
+  AND isNotNull(resolutiondate) AND isNotNull(created)
+| dedup key
+| fieldsAdd cycle_days = (toTimestamp(resolutiondate) - toTimestamp(created)) / 86400000000000
+| fields key, summary, created, resolutiondate, cycle_days
+| sort cycle_days asc`;
 }
 
 /** Cycle time trend — average per month for closed VIs */

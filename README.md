@@ -13,15 +13,16 @@ Defaults to Platform Apps (PAPA) but supports any capability via a dropdown sele
 ```
 ui/app/
 ├── config.ts              # Capability registry, scorecard config (219 lines)
-├── queries.ts             # All DQL queries — 27 query functions (400 lines)
+├── queries.ts             # All DQL queries — 28 query functions (413 lines)
 ├── CapabilityContext.tsx   # React context for capability switching
 ├── App.tsx                # Routes: /, /value, /quality, /predictability, /devex
 ├── components/
 │   ├── Header.tsx         # Navigation + capability selector
-│   └── Card.tsx           # Reusable card component
+│   ├── Card.tsx           # Reusable card component
+│   └── QueryInspector.tsx # "⟨/⟩ DQL" button → Sheet with raw query + copy/notebook link
 └── pages/
     ├── Overview.tsx        # Hero KPIs with gauge rings, pillar nav cards, Juno links
-    ├── UnlockValue.tsx     # VI throughput, cycle time, pipeline
+    ├── UnlockValue.tsx     # VI throughput, cycle time (with math verification), pipeline
     ├── Quality.tsx         # DER summary/split, scorecards, trend, component bugs
     ├── Predictability.tsx  # Fix version stability, target date drift
     └── DevExperience.tsx   # Sprint velocity, story cycle time, WIP
@@ -110,5 +111,22 @@ npx dt-app deploy  # Deploy to environment
 ## Environment
 
 - **App ID**: `my.ai.first.observer`
-- **Version**: 0.4.1
+- **Version**: 0.5.0
 - **Target**: `umsaywsjuo.dev.apps.dynatracelabs.com`
+
+## Transparency Features (v0.5.0)
+
+### DQL Query Inspector
+Every data card across all four pillar pages has a `⟨/⟩ DQL` button that opens a Strato Sheet overlay showing:
+- The exact DQL query executed against Grail
+- Copy-to-clipboard button
+- Link to open Dynatrace Notebooks for independent verification
+
+Implemented in `ui/app/components/QueryInspector.tsx` — 18 cards wired across all pages.
+
+### Cycle Time Math Verification
+The Unlock Value cycle time card includes:
+- Full percentile distribution (min, p10, p25, p50, p75, p90, max)
+- Calculation verification showing formula, sorted position, and resulting values
+- Expandable DataTable of all individual VIs with Jira links, sorted by cycle time
+- Methodology explanation ("created → resolved" = backlog-to-delivery, not implementation time)

@@ -18,6 +18,7 @@ import {
   unplannedVisQuery,
   predictabilityTrendQuery,
 } from "../queries";
+import { QueryInspector } from "../components/QueryInspector";
 
 type Col = DataTableColumnDef<ResultRecord>;
 
@@ -40,7 +41,8 @@ function empty(msg: string) {
 /* ── Monthly predictability trend ───────────────────── */
 function PredictabilityTrend() {
   const { capability } = useCapability();
-  const { data, isLoading } = useDql({ query: predictabilityTrendQuery(capability) });
+  const query = predictabilityTrendQuery(capability);
+  const { data, isLoading } = useDql({ query });
 
   const chartData = useMemo(() => {
     return (data?.records ?? []).map((r) => ({
@@ -51,7 +53,10 @@ function PredictabilityTrend() {
 
   return card(
     <>
-      <Heading level={4}>Fix Version Churn Rate (12-month trend)</Heading>
+      <Flex gap={8} alignItems="center">
+        <Heading level={4}>Fix Version Churn Rate (12-month trend)</Heading>
+        <QueryInspector query={query} title="FV Churn Rate — DQL" />
+      </Flex>
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
         % of active VIs whose fix version changed each month. Lower is better — declining trend means improving predictability.
       </Paragraph>
@@ -67,7 +72,8 @@ function PredictabilityTrend() {
 /* ── Recent fixVersion changes ──────────────────────── */
 function RecentFixVersionChanges() {
   const { capability } = useCapability();
-  const { data, isLoading } = useDql({ query: fixVersionChangesExpandedQuery(capability) });
+  const query = fixVersionChangesExpandedQuery(capability);
+  const { data, isLoading } = useDql({ query });
 
   const columns: Col[] = useMemo(
     () => [
@@ -112,7 +118,10 @@ function RecentFixVersionChanges() {
 
   return card(
     <>
-      <Heading level={4}>Fix Version Changes (last 7 days, in-flight VIs)</Heading>
+      <Flex gap={8} alignItems="center">
+        <Heading level={4}>Fix Version Changes (last 7 days, in-flight VIs)</Heading>
+        <QueryInspector query={query} title="FV Changes (7d) — DQL" />
+      </Flex>
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>VIs in Implementation+ whose fixVersion changed between daily snapshots. Includes target end date.</Paragraph>
       {isLoading ? loading() : (data?.records?.length ?? 0) > 0 ? (
         <DataTable data={data?.records ?? []} columns={columns} sortable resizable />
@@ -124,7 +133,8 @@ function RecentFixVersionChanges() {
 /* ── 30-day fixVersion stability ────────────────────── */
 function FixVersionStability() {
   const { capability } = useCapability();
-  const { data, isLoading } = useDql({ query: fixVersionStability30dQuery(capability) });
+  const query = fixVersionStability30dQuery(capability);
+  const { data, isLoading } = useDql({ query });
 
   const columns: Col[] = useMemo(
     () => [
@@ -157,7 +167,10 @@ function FixVersionStability() {
 
   return card(
     <>
-      <Heading level={4}>Fix Version Instability (30 days)</Heading>
+      <Flex gap={8} alignItems="center">
+        <Heading level={4}>Fix Version Instability (30 days)</Heading>
+        <QueryInspector query={query} title="FV Instability (30d) — DQL" />
+      </Flex>
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>VIs that had multiple different fixVersions over the past 30 days.</Paragraph>
       {isLoading ? loading() : (data?.records?.length ?? 0) > 0 ? (
         <DataTable data={data?.records ?? []} columns={columns} sortable resizable>
@@ -171,7 +184,8 @@ function FixVersionStability() {
 /* ── Target date drift ──────────────────────────────── */
 function TargetDateDrift() {
   const { capability } = useCapability();
-  const { data, isLoading } = useDql({ query: targetDateDriftQuery(capability) });
+  const query = targetDateDriftQuery(capability);
+  const { data, isLoading } = useDql({ query });
 
   const columns: Col[] = useMemo(
     () => [
@@ -204,7 +218,10 @@ function TargetDateDrift() {
 
   return card(
     <>
-      <Heading level={4}>Target Date Drift (30 days)</Heading>
+      <Flex gap={8} alignItems="center">
+        <Heading level={4}>Target Date Drift (30 days)</Heading>
+        <QueryInspector query={query} title="Target Date Drift — DQL" />
+      </Flex>
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>VIs whose target end date changed while in implementation.</Paragraph>
       {isLoading ? loading() : (data?.records?.length ?? 0) > 0 ? (
         <DataTable data={data?.records ?? []} columns={columns} sortable resizable>
@@ -218,7 +235,8 @@ function TargetDateDrift() {
 /* ── Delivery by fix version ────────────────────────── */
 function DeliveryByVersion() {
   const { capability } = useCapability();
-  const { data, isLoading } = useDql({ query: deliveryAccuracyQuery(capability) });
+  const query = deliveryAccuracyQuery(capability);
+  const { data, isLoading } = useDql({ query });
   const { data: unplannedData, isLoading: unplannedLoading } = useDql({ query: unplannedVisQuery(capability) });
   const [showUnplanned, setShowUnplanned] = useState(false);
 
@@ -266,7 +284,10 @@ function DeliveryByVersion() {
   return card(
     <>
       <Flex justifyContent="space-between" alignItems="center">
-        <Heading level={4}>Closed VIs by Fix Version (12 months)</Heading>
+        <Flex gap={8} alignItems="center">
+          <Heading level={4}>Closed VIs by Fix Version (12 months)</Heading>
+          <QueryInspector query={query} title="Delivery Accuracy — DQL" />
+        </Flex>
         <button
           onClick={() => setShowUnplanned(!showUnplanned)}
           style={{

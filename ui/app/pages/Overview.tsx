@@ -201,6 +201,7 @@ export const Overview = () => {
             target="< 90 days"
             pct={Math.max(0, 100 - (p50 / 3.6))}
             color={cycleColor}
+            sub="created → resolved"
           />
           <HeroKpi
             label="DER (Rolling Quarter)"

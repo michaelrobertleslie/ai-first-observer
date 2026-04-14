@@ -1,7 +1,7 @@
 # AI-First Observer — Copilot Instructions
 
 ## What This Is
-A Dynatrace platform app (v0.4.1) measuring the impact of AI-First on software delivery across four pillars: Unlock Value, Quality, Predictability, and Developer Experience. Defaults to Platform Apps (PAPA) but supports any capability via a dropdown selector.
+A Dynatrace platform app (v0.5.0) measuring the impact of AI-First on software delivery across four pillars: Unlock Value, Quality, Predictability, and Developer Experience. Defaults to Platform Apps (PAPA) but supports any capability via a dropdown selector.
 
 ## Environment
 - **App ID**: `my.ai.first.observer`
@@ -31,15 +31,16 @@ All queries accept a `Capability` config object from `config.ts`. The capability
 ```
 ui/app/
 ├── config.ts              # CAPABILITIES registry, scorecardUrl() helper (219 lines)
-├── queries.ts             # 27 DQL query functions, all accept Capability (400 lines)
+├── queries.ts             # 28 DQL query functions, all accept Capability (413 lines)
 ├── CapabilityContext.tsx   # React context for capability switching
 ├── App.tsx                # 5 routes: /, /value, /quality, /predictability, /devex
 ├── components/
 │   ├── Header.tsx         # Navigation + capability selector dropdown
-│   └── Card.tsx           # Reusable card component
+│   ├── Card.tsx           # Reusable card component
+│   └── QueryInspector.tsx # Reusable DQL inspector — Sheet overlay with query + copy + Notebooks link
 └── pages/
     ├── Overview.tsx        # Hero KPIs with gauge rings, trend arrows, pillar nav
-    ├── UnlockValue.tsx     # VI throughput, cycle time, pipeline
+    ├── UnlockValue.tsx     # VI throughput, cycle time (math verification + detail table), pipeline
     ├── Quality.tsx         # DER summary/split, scorecards, trend, component bugs
     ├── Predictability.tsx  # FV stability, target date drift, delivery accuracy
     └── DevExperience.tsx   # Sprint velocity, story cycle time, WIP
@@ -52,6 +53,12 @@ Each pillar Overview card shows a trend indicator (↗ Improving / ↘ Declining
 
 ### Gauge Rings
 Overview hero KPIs use custom SVG gauge rings. Each ring shows a percentage with color coding (green/amber/red thresholds vary by pillar).
+
+### QueryInspector (DQL Transparency)
+Every data card has a `⟨/⟩ DQL` button (from `components/QueryInspector.tsx`) that opens a Strato `Sheet` overlay showing the raw DQL query, a copy button, and a link to Dynatrace Notebooks. Pattern: store the query string in a local variable, pass to both `useDql({ query })` and `<QueryInspector query={query} title="..." />`.
+
+### Cycle Time Math Verification
+The cycle time card on UnlockValue shows full percentile distribution (min–max), a "Verification" section with calculation working (position in sorted set, formula), and an expandable DataTable listing every closed VI with Jira links.
 
 ### Scorecard Links
 Component scorecards link to a shared quality dashboard on `dre63214.apps.dynatrace.com` using `vfilter_asset=<slug>` URL parameters.
