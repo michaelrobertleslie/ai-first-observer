@@ -4,6 +4,7 @@ import { Sheet } from "@dynatrace/strato-components/overlays";
 import { Flex } from "@dynatrace/strato-components/layouts";
 import { Paragraph } from "@dynatrace/strato-components/typography";
 import Colors from "@dynatrace/strato-design-tokens/colors";
+import { getEnvironmentUrl } from "@dynatrace-sdk/app-environment";
 
 /**
  * A small "⟨/⟩ DQL" button that opens a Sheet showing the raw DQL query
@@ -87,7 +88,7 @@ export function QueryInspector({
               {copied ? "✓ Copied" : "Copy to clipboard"}
             </Button>
             <a
-              href="/ui/apps/dynatrace.notebooks/"
+              href={`${getEnvironmentUrl()}ui/apps/dynatrace.notebooks/`}
               target="_blank"
               rel="noopener noreferrer"
               style={{
