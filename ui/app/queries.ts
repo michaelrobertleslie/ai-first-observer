@@ -285,7 +285,7 @@ export function sprintCommitmentQuery(cap: Capability): string {
 | summarize committed = count(), delivered = sum(is_closed), points_committed = sum(sp), points_delivered = sum(delivered_sp), sprint_start = min(first_seen), by: {Sprint}
 | fieldsAdd delivery_pct = if(committed > 0, 100.0 * toDouble(delivered) / toDouble(committed), else: 0.0)
 | fieldsAdd points_pct = if(points_committed > 0, 100.0 * points_delivered / points_committed, else: 0.0)
-| fieldsAdd sprint_num = toLong(arrayLast(split(Sprint, " ")))
+| parse Sprint, "LD:prefix LONG:sprint_num"
 | filter committed >= 20
 | sort sprint_num desc
 | limit 15`;
