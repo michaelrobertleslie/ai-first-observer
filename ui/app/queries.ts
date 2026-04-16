@@ -271,6 +271,24 @@ export function unplannedVisQuery(cap: Capability): string {
 | limit 50`;
 }
 
+/** Sprint commitment vs delivery — story count and points per sprint (6 months) */
+export function sprintCommitmentQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 180d
+| filter event.type == "jira_daily.story"
+  AND project == "${cap.bugProject}"
+  AND isNotNull(Sprint)
+| sort timestamp desc
+| dedup key
+| fieldsAdd is_closed = if(status == "Closed", 1, else: 0)
+| fieldsAdd sp = toDouble(\`Story Points\`)
+| fieldsAdd delivered_sp = if(status == "Closed", sp, else: 0.0)
+| summarize committed = count(), delivered = sum(is_closed), points_committed = sum(sp), points_delivered = sum(delivered_sp), by: {Sprint}
+| fieldsAdd delivery_pct = if(committed > 0, 100.0 * toDouble(delivered) / toDouble(committed), else: 0.0)
+| fieldsAdd points_pct = if(points_committed > 0, 100.0 * points_delivered / points_committed, else: 0.0)
+| sort Sprint desc
+| limit 15`;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    PILLAR 4 — DEVELOPER EXPERIENCE (Proxy metrics)
    ═══════════════════════════════════════════════════════════════ */

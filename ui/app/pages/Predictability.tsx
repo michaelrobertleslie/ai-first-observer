@@ -17,6 +17,7 @@ import {
   deliveryAccuracyQuery,
   unplannedVisQuery,
   predictabilityTrendQuery,
+  sprintCommitmentQuery,
 } from "../queries";
 import { QueryInspector } from "../components/QueryInspector";
 
@@ -36,6 +37,79 @@ function loading() {
 
 function empty(msg: string) {
   return <Paragraph style={{ opacity: 0.5 }}>{msg}</Paragraph>;
+}
+
+/* ── Sprint commitment vs delivery ──────────────────── */
+function SprintCommitment() {
+  const { capability } = useCapability();
+  const query = sprintCommitmentQuery(capability);
+  const { data, isLoading } = useDql({ query });
+
+  const columns: Col[] = useMemo(
+    () => [
+      { id: "Sprint", accessor: "Sprint", header: "Sprint", minWidth: 200 },
+      { id: "committed", accessor: "committed", header: "Stories", minWidth: 90, alignment: "right" as const },
+      { id: "delivered", accessor: "delivered", header: "Closed", minWidth: 90, alignment: "right" as const },
+      {
+        id: "delivery_pct", accessor: "delivery_pct", header: "Delivery %", minWidth: 110, alignment: "right" as const,
+        cell: ({ value }: { value: unknown }) => {
+          const pct = Number(value) || 0;
+          const color = pct >= 80 ? Colors.Charts.Apdex.Good.Default : pct >= 60 ? Colors.Charts.Apdex.Fair.Default : Colors.Charts.Apdex.Poor.Default;
+          return (
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", height: "100%", color, fontWeight: 600 }}>
+              {pct.toFixed(0)}%
+            </span>
+          );
+        },
+      },
+      {
+        id: "points_committed", accessor: "points_committed", header: "SP Committed", minWidth: 110, alignment: "right" as const,
+        cell: ({ value }: { value: unknown }) => (
+          <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
+            {Math.round(Number(value) || 0)}
+          </span>
+        ),
+      },
+      {
+        id: "points_delivered", accessor: "points_delivered", header: "SP Delivered", minWidth: 110, alignment: "right" as const,
+        cell: ({ value }: { value: unknown }) => (
+          <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
+            {Math.round(Number(value) || 0)}
+          </span>
+        ),
+      },
+      {
+        id: "points_pct", accessor: "points_pct", header: "SP %", minWidth: 90, alignment: "right" as const,
+        cell: ({ value }: { value: unknown }) => {
+          const pct = Number(value) || 0;
+          const color = pct >= 80 ? Colors.Charts.Apdex.Good.Default : pct >= 60 ? Colors.Charts.Apdex.Fair.Default : Colors.Charts.Apdex.Poor.Default;
+          return (
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", height: "100%", color, fontWeight: 600 }}>
+              {pct.toFixed(0)}%
+            </span>
+          );
+        },
+      },
+    ],
+    [],
+  );
+
+  return card(
+    <>
+      <Flex gap={8} alignItems="center">
+        <Heading level={4}>Sprint Commitment vs Delivery (6 months)</Heading>
+        <QueryInspector query={query} title="Sprint Commitment — DQL" />
+      </Flex>
+      <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
+        Stories assigned to each sprint vs stories closed. Delivery % above 80% indicates healthy commitment sizing.
+      </Paragraph>
+      {isLoading ? loading() : (data?.records?.length ?? 0) > 0 ? (
+        <DataTable data={data?.records ?? []} columns={columns} sortable resizable>
+          <DataTable.Pagination defaultPageSize={10} />
+        </DataTable>
+      ) : empty("No sprint data available")}
+    </>,
+  );
 }
 
 /* ── Monthly predictability trend ───────────────────── */
@@ -329,6 +403,7 @@ export const Predictability = () => {
         How often do delivery commitments shift? Tracking fix version stability and target date drift for {capability.label}.
       </Paragraph>
       <PredictabilityTrend />
+      <SprintCommitment />
       <RecentFixVersionChanges />
       <FixVersionStability />
       <TargetDateDrift />

@@ -9,6 +9,7 @@ import { ProgressCircle } from "@dynatrace/strato-components/content";
 import Colors from "@dynatrace/strato-design-tokens/colors";
 import { useCapability } from "../CapabilityContext";
 import { jiraUrl, jiraSearchUrl } from "../config";
+import type { Capability } from "../config";
 import {
   viThroughputTrendQuery,
   viCycleTimeQuery,
@@ -374,6 +375,28 @@ function Pipeline() {
   );
 }
 
+/* ── App adoption (external dashboard link) ─────────── */
+function AdoptionDashboard() {
+  const { capability } = useCapability();
+  if (!capability.adoptionDashboardUrl) return null;
+  return (
+    <a href={capability.adoptionDashboardUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", color: "inherit", width: "100%" }}>
+      <Surface style={{ width: "100%", borderLeft: `3px solid ${Colors.Charts.Apdex.Excellent.Default}`, cursor: "pointer" }}>
+        <Flex flexDirection="column" gap={8} padding={20}>
+          <Flex gap={8} alignItems="center">
+            <Heading level={4}>App Adoption Metrics</Heading>
+            <span style={{ fontSize: 11, opacity: 0.5 }}>↗ External Dashboard</span>
+          </Flex>
+          <Paragraph style={{ opacity: 0.6, fontSize: 12 }}>
+            Usage and adoption metrics for {capability.label} apps — active users, session counts, and feature engagement.
+            Opens in a separate Dynatrace environment dashboard.
+          </Paragraph>
+        </Flex>
+      </Surface>
+    </a>
+  );
+}
+
 /* ── Context: Industry benchmarks ───────────────────── */
 function IndustryContext() {
   return (
@@ -409,6 +432,7 @@ export const UnlockValue = () => {
       <CycleTimeTrend />
       <StoryPointsTrend />
       <Pipeline />
+      <AdoptionDashboard />
       <IndustryContext />
     </Flex>
   );

@@ -28,6 +28,8 @@ export interface Capability {
   scorecardAssets?: ScorecardAsset[];
   /** Additional Juno catalog links (systems/SDKs without a scorecard dashboard) */
   junoLinks?: JunoLink[];
+  /** URL to external adoption metrics dashboard (optional) */
+  adoptionDashboardUrl?: string;
 }
 
 const SCORECARD_BASE = "https://dre63214.apps.dynatrace.com/ui/apps/dynatrace.dashboards/dashboard/monaco-643204c8-ddb7-3891-9842-063f1dc1b1cf#from=now%28%29-14d&to=now%28%29&vfilter_assetVersion=summary&vfilter_asset=";
@@ -68,6 +70,7 @@ export const CAPABILITIES: Record<string, Capability> = {
       { label: "Data Exploration (SDK)", url: "https://juno.internal.dynatrace.com/catalog/default/system/data-exploration" },
       { label: "DQL Builder (SDK)", url: "https://juno.internal.dynatrace.com/catalog/dynatrace-sdk/component/dynatrace-sdk_dql-builder" },
     ],
+    adoptionDashboardUrl: "https://ntd44713.apps.dynatrace.com/ui/document/v0/#share=ce7379d5-4ead-4af1-921b-54fcac39382e",
   },
   PS: {
     label: "Platform Services",
