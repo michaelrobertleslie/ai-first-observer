@@ -70,7 +70,7 @@ export const CAPABILITIES: Record<string, Capability> = {
       { label: "Data Exploration (SDK)", url: "https://juno.internal.dynatrace.com/catalog/default/system/data-exploration" },
       { label: "DQL Builder (SDK)", url: "https://juno.internal.dynatrace.com/catalog/dynatrace-sdk/component/dynatrace-sdk_dql-builder" },
     ],
-    adoptionDashboardUrl: "https://ntd44713.apps.dynatrace.com/ui/document/v0/#share=ce7379d5-4ead-4af1-921b-54fcac39382e",
+    adoptionDashboardUrl: "https://dre63214.apps.dynatrace.com/ui/apps/dynatrace.dashboards/dashboard/8e897b01-6d0e-41a1-b77b-46c9b867373d#from=-12w%40w&to=%40w",
   },
   PS: {
     label: "Platform Services",
