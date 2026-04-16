@@ -45,23 +45,10 @@ function SprintCommitment() {
   const query = sprintCommitmentQuery(capability);
   const { data, isLoading } = useDql({ query });
 
-  // Find the current (latest) sprint — first record since sorted desc
-  const currentSprint = data?.records?.[0]?.Sprint;
-
+  // Columns filtered to sprints with ≥20 stories (noise filter in DQL)
   const columns: Col[] = useMemo(
     () => [
-      {
-        id: "Sprint", accessor: "Sprint", header: "Sprint", minWidth: 200,
-        cell: ({ value }: { value: unknown }) => {
-          const isCurrent = value === currentSprint;
-          return (
-            <span style={{ display: "flex", alignItems: "center", gap: 6, height: "100%", fontWeight: isCurrent ? 700 : 400 }}>
-              {String(value ?? "")}
-              {isCurrent && <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 4, background: Colors.Charts.Apdex.Excellent.Default, color: "#fff", fontWeight: 600 }}>CURRENT</span>}
-            </span>
-          );
-        },
-      },
+      { id: "Sprint", accessor: "Sprint", header: "Sprint", minWidth: 200 },
       {
         id: "sprint_start", accessor: "sprint_start", header: "Started", minWidth: 110,
         cell: ({ value }: { value: unknown }) => (
@@ -113,7 +100,7 @@ function SprintCommitment() {
         },
       },
     ],
-    [currentSprint],
+    [],
   );
 
   return card(
@@ -123,7 +110,7 @@ function SprintCommitment() {
         <QueryInspector query={query} title="Sprint Commitment — DQL" />
       </Flex>
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
-        Stories assigned to each sprint vs stories closed. Delivery % above 80% indicates healthy commitment sizing.
+        Stories assigned to each sprint vs stories closed. Sprints with fewer than 20 stories are filtered out (future placeholders). Delivery % above 80% indicates healthy commitment sizing.
       </Paragraph>
       {isLoading ? loading() : (data?.records?.length ?? 0) > 0 ? (
         <DataTable data={data?.records ?? []} columns={columns} sortable resizable>
