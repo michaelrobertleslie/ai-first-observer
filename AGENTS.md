@@ -4,12 +4,35 @@
 
 Before writing any DQL query, the agent must always use the knowledge base (`dql_search` tool) to search for relevant DQL documentation, syntax, and examples, whenever the tool is available.
 
+**Mandatory DQL workflow** (when MCP tools are available):
+1. `dql_search` — search for relevant syntax, functions, and patterns before writing
+2. Write the DQL query
+3. `verify_dql` — syntax-check the query before executing
+4. `execute_dql` — run the query
+5. For reusable analysis, use `create_dynatrace_notebook` to save queries as a shareable Notebook
+
+Also available:
+- `generate_dql_from_natural_language` — get a first-draft DQL from plain English (then refine)
+- `explain_dql_in_natural_language` — explain existing queries during code review
+
 ## UI Components - Strato
 
 Before using any Strato UI component, the agent must always use the knowledge base tools to search for relevant component documentation and usage examples, whenever the tools are available:
 - Use the `strato_search` tool to search for available Strato components by name or keyword.
 - Use the `strato_get_component` tool to retrieve detailed documentation, props, and code examples for a specific component.
 - Use the `strato_get_usecase_details` tool to get code for specific component use cases and patterns.
+- Use the `get_exp_standard` tool to check UX compliance (app headers, datatables, permissions, empty states).
+
+## Dynatrace SDKs
+
+Before using any `@dynatrace-sdk/*` package, use the `sdk_get_doc` tool to get the full API reference with methods, parameters, and examples. Use `sdk_search` to discover available SDK packages.
+
+## Juno (Developer Portal)
+
+When the Juno MCP tools are available, use them for team and component data:
+- `juno_semantic_search` — search catalog and TechDocs
+- `juno_catalog_get_entities_custom_query` — query teams by capability, get members, Jira project mappings
+- `juno_catalog_get_entity_by_owner` — find systems/components owned by a group
 
 ## Project Overview
 This repository contains a **Dynatrace App** built with the Dynatrace App Toolkit "dt-app", running on **Dynatrace AppEngine**. Use the **App Toolkit** during development and CI (`dt-app dev`, `dt-app build`, `dt-app deploy`, `dt-app publish`).
