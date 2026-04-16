@@ -12,8 +12,8 @@ Defaults to Platform Apps (PAPA) but supports any capability via a dropdown sele
 
 ```
 ui/app/
-├── config.ts              # Capability registry, scorecard config (219 lines)
-├── queries.ts             # All DQL queries — 28 query functions (413 lines)
+├── config.ts              # Capability registry, scorecard config (222 lines)
+├── queries.ts             # All DQL queries — 29 query functions (431 lines)
 ├── CapabilityContext.tsx   # React context for capability switching
 ├── App.tsx                # Routes: /, /value, /quality, /predictability, /devex
 ├── components/
@@ -22,9 +22,9 @@ ui/app/
 │   └── QueryInspector.tsx # "⟨/⟩ DQL" button → Sheet with raw query + copy/notebook link
 └── pages/
     ├── Overview.tsx        # Hero KPIs with gauge rings, pillar nav cards, Juno links
-    ├── UnlockValue.tsx     # VI throughput, cycle time (with math verification), pipeline
+    ├── UnlockValue.tsx     # VI throughput, cycle time (with math verification), pipeline, adoption link
     ├── Quality.tsx         # DER summary/split, scorecards, trend, component bugs
-    ├── Predictability.tsx  # Fix version stability, target date drift
+    ├── Predictability.tsx  # Fix version stability, target date drift, sprint commitment
     └── DevExperience.tsx   # Sprint velocity, story cycle time, WIP
 ```
 
@@ -111,7 +111,7 @@ npx dt-app deploy  # Deploy to environment
 ## Environment
 
 - **App ID**: `my.ai.first.observer`
-- **Version**: 0.5.3
+- **Version**: 0.6.0
 - **Target**: `umsaywsjuo.dev.apps.dynatracelabs.com`
 
 ## Transparency Features (v0.5.0)
@@ -132,3 +132,15 @@ The Unlock Value cycle time card includes:
 - Calculation verification showing formula, sorted position, and resulting values
 - Expandable DataTable of all individual VIs with Jira links, sorted by cycle time
 - Methodology explanation ("created → resolved" = backlog-to-delivery, not implementation time)
+
+## New in v0.6.0
+
+### Sprint Commitment vs Delivery (Predictability)
+Table on the Predictability page showing per-sprint commitment accuracy:
+- Stories committed (assigned to sprint) vs stories closed
+- Story points committed vs delivered
+- Delivery % and SP % with color-coded thresholds (green ≥80%, amber ≥60%, red <60%)
+- Last 6 months of sprint data from `jira_daily.story` snapshots
+
+### App Adoption Dashboard (Unlock Value)
+Clickable card on the Unlock Value page linking to the external app adoption metrics dashboard on `dre63214`. Configured per capability via the `adoptionDashboardUrl` field — currently enabled for PAPA only. The adoption data lives on a production environment and cannot be queried from the dev environment directly.
