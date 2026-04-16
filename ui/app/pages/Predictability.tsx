@@ -76,7 +76,7 @@ function SprintCommitment() {
         ),
       },
       {
-        id: "sprint_start", accessor: "sprint_start", header: "Started", minWidth: 110,
+        id: "last_closed", accessor: "last_closed", header: "Last Closed", minWidth: 110,
         cell: ({ value }: { value: unknown }) => (
           <span style={{ display: "flex", alignItems: "center", height: "100%", opacity: 0.7 }}>
             {value ? String(value).substring(0, 10) : "—"}

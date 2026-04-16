@@ -278,10 +278,11 @@ export function sprintCommitmentQuery(cap: Capability): string {
   AND project == "${cap.bugProject}"
   AND isNotNull(Sprint)
 | sort timestamp desc
-| summarize latest_status = takeFirst(status), latest_sprint = takeFirst(Sprint), sp = takeFirst(toDouble(\`Story Points\`)), first_seen = min(formatTimestamp(timestamp, format: "yyyy-MM-dd")), by: {key}
+| summarize latest_status = takeFirst(status), latest_sprint = takeFirst(Sprint), sp = takeFirst(toDouble(\`Story Points\`)), resolved = takeFirst(resolutiondate), by: {key}
 | fieldsAdd is_closed = if(latest_status == "Closed", 1, else: 0)
 | fieldsAdd delivered_sp = if(latest_status == "Closed", sp, else: 0.0)
-| summarize committed = count(), delivered = sum(is_closed), points_committed = sum(sp), points_delivered = sum(delivered_sp), sprint_start = min(first_seen), by: {Sprint = latest_sprint}
+| fieldsAdd closed_date = if(latest_status == "Closed", resolved, else: "")
+| summarize committed = count(), delivered = sum(is_closed), points_committed = sum(sp), points_delivered = sum(delivered_sp), last_closed = max(closed_date), by: {Sprint = latest_sprint}
 | fieldsAdd delivery_pct = if(committed > 0, 100.0 * toDouble(delivered) / toDouble(committed), else: 0.0)
 | fieldsAdd points_pct = if(points_committed > 0, 100.0 * points_delivered / points_committed, else: 0.0)
 | parse Sprint, "LD:prefix LONG:sprint_num"
