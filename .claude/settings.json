@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run start:*)",
+      "Bash(npx dt-app:*)",
+      "Bash(npm run build)",
+      "Bash(npm run deploy)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(wc:*)",
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit"
+    ]
+  }
+}
