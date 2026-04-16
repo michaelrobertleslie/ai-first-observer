@@ -13,7 +13,7 @@ Defaults to Platform Apps (PAPA) but supports any capability via a dropdown sele
 ```
 ui/app/
 ├── config.ts              # Capability registry, scorecard config (222 lines)
-├── queries.ts             # All DQL queries — 29 query functions (431 lines)
+├── queries.ts             # All DQL queries — 31 query functions (433 lines)
 ├── CapabilityContext.tsx   # React context for capability switching
 ├── App.tsx                # Routes: /, /value, /quality, /predictability, /devex
 ├── components/
@@ -111,7 +111,7 @@ npx dt-app deploy  # Deploy to environment
 ## Environment
 
 - **App ID**: `my.ai.first.observer`
-- **Version**: 0.6.0
+- **Version**: 0.6.3
 - **Target**: `umsaywsjuo.dev.apps.dynatracelabs.com`
 
 ## Transparency Features (v0.5.0)

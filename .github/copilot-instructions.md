@@ -1,12 +1,12 @@
 # AI-First Observer — Copilot Instructions
 
 ## What This Is
-A Dynatrace platform app (v0.6.0) measuring the impact of AI-First on software delivery across four pillars: Unlock Value, Quality, Predictability, and Developer Experience. Defaults to Platform Apps (PAPA) but supports any capability via a dropdown selector.
+A Dynatrace platform app (v0.6.3) measuring the impact of AI-First on software delivery across four pillars: Unlock Value, Quality, Predictability, and Developer Experience. Defaults to Platform Apps (PAPA) but supports any capability via a dropdown selector.
 
 ## Environment
 - **App ID**: `my.ai.first.observer`
 - **Target**: `umsaywsjuo.dev.apps.dynatracelabs.com`
-- **Scopes**: `storage:logs:read`, `storage:buckets:read`, `storage:bizevents:read`
+- **Scopes**: `storage:logs:read`, `storage:buckets:read`, `storage:bizevents:read`, `storage:events:read`, `storage:metrics:read`
 
 ## Data Model
 
@@ -31,7 +31,7 @@ All queries accept a `Capability` config object from `config.ts`. The capability
 ```
 ui/app/
 ├── config.ts              # CAPABILITIES registry, scorecardUrl() helper (222 lines)
-├── queries.ts             # 29 DQL query functions, all accept Capability (431 lines)
+├── queries.ts             # 31 DQL query functions, all accept Capability (433 lines)
 ├── CapabilityContext.tsx   # React context for capability switching
 ├── App.tsx                # 5 routes: /, /value, /quality, /predictability, /devex
 ├── components/
