@@ -45,10 +45,36 @@ function SprintCommitment() {
   const query = sprintCommitmentQuery(capability);
   const { data, isLoading } = useDql({ query });
 
+  // Current sprint = highest sprint_num with any deliveries (data sorted desc)
+  const currentSprintIdx = useMemo(() => {
+    const records = data?.records ?? [];
+    return records.findIndex((r) => Number(r.delivered) > 0);
+  }, [data]);
+
   // Columns filtered to sprints with ≥20 stories (noise filter in DQL)
   const columns: Col[] = useMemo(
     () => [
-      { id: "Sprint", accessor: "Sprint", header: "Sprint", minWidth: 200 },
+      {
+        id: "Sprint", accessor: "Sprint", header: "Sprint", minWidth: 200,
+        cell: ({ value, rowIndex }: { value: unknown; rowIndex: number }) => (
+          <span style={{ display: "flex", alignItems: "center", gap: 8, height: "100%" }}>
+            {String(value ?? "")}
+            {rowIndex === currentSprintIdx && (
+              <span style={{
+                background: Colors.Charts.Apdex.Good.Default,
+                color: "#000",
+                fontSize: 10,
+                fontWeight: 700,
+                padding: "1px 6px",
+                borderRadius: 4,
+                letterSpacing: 0.5,
+              }}>
+                CURRENT
+              </span>
+            )}
+          </span>
+        ),
+      },
       {
         id: "sprint_start", accessor: "sprint_start", header: "Started", minWidth: 110,
         cell: ({ value }: { value: unknown }) => (
@@ -63,9 +89,10 @@ function SprintCommitment() {
         id: "delivery_pct", accessor: "delivery_pct", header: "Delivery %", minWidth: 110, alignment: "right" as const,
         cell: ({ value }: { value: unknown }) => {
           const pct = Number(value) || 0;
-          const color = pct >= 80 ? Colors.Charts.Apdex.Good.Default : pct >= 60 ? Colors.Charts.Apdex.Fair.Default : Colors.Charts.Apdex.Poor.Default;
+          const notStarted = pct < 5;
+          const color = notStarted ? undefined : pct >= 80 ? Colors.Charts.Apdex.Good.Default : pct >= 60 ? Colors.Charts.Apdex.Fair.Default : Colors.Charts.Apdex.Poor.Default;
           return (
-            <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", height: "100%", color, fontWeight: 600 }}>
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", height: "100%", color, fontWeight: 600, opacity: notStarted ? 0.35 : 1 }}>
               {pct.toFixed(0)}%
             </span>
           );
@@ -91,16 +118,17 @@ function SprintCommitment() {
         id: "points_pct", accessor: "points_pct", header: "SP %", minWidth: 90, alignment: "right" as const,
         cell: ({ value }: { value: unknown }) => {
           const pct = Number(value) || 0;
-          const color = pct >= 80 ? Colors.Charts.Apdex.Good.Default : pct >= 60 ? Colors.Charts.Apdex.Fair.Default : Colors.Charts.Apdex.Poor.Default;
+          const notStarted = pct < 5;
+          const color = notStarted ? undefined : pct >= 80 ? Colors.Charts.Apdex.Good.Default : pct >= 60 ? Colors.Charts.Apdex.Fair.Default : Colors.Charts.Apdex.Poor.Default;
           return (
-            <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", height: "100%", color, fontWeight: 600 }}>
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", height: "100%", color, fontWeight: 600, opacity: notStarted ? 0.35 : 1 }}>
               {pct.toFixed(0)}%
             </span>
           );
         },
       },
     ],
-    [],
+    [currentSprintIdx],
   );
 
   return card(
@@ -110,7 +138,7 @@ function SprintCommitment() {
         <QueryInspector query={query} title="Sprint Commitment — DQL" />
       </Flex>
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
-        Stories assigned to each sprint vs stories closed. Sprints with fewer than 20 stories are filtered out (future placeholders). Delivery % above 80% indicates healthy commitment sizing.
+        Stories assigned to each sprint vs stories closed. The CURRENT badge marks the active sprint. Sprints with fewer than 20 stories are filtered out. Delivery % above 80% indicates healthy commitment sizing.
       </Paragraph>
       {isLoading ? loading() : (data?.records?.length ?? 0) > 0 ? (
         <DataTable data={data?.records ?? []} columns={columns} sortable resizable>
