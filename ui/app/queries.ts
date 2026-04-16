@@ -278,11 +278,11 @@ export function sprintCommitmentQuery(cap: Capability): string {
   AND project == "${cap.bugProject}"
   AND isNotNull(Sprint)
 | sort timestamp desc
-| dedup key
-| fieldsAdd is_closed = if(status == "Closed", 1, else: 0)
-| fieldsAdd sp = toDouble(\`Story Points\`)
-| fieldsAdd delivered_sp = if(status == "Closed", sp, else: 0.0)
-| summarize committed = count(), delivered = sum(is_closed), points_committed = sum(sp), points_delivered = sum(delivered_sp), by: {Sprint}
+| fieldsAdd snap_date = formatTimestamp(timestamp, format: "yyyy-MM-dd")
+| summarize latest_status = takeFirst(status), sp = takeFirst(toDouble(\`Story Points\`)), first_seen = min(snap_date), by: {key, Sprint}
+| fieldsAdd is_closed = if(latest_status == "Closed", 1, else: 0)
+| fieldsAdd delivered_sp = if(latest_status == "Closed", sp, else: 0.0)
+| summarize committed = count(), delivered = sum(is_closed), points_committed = sum(sp), points_delivered = sum(delivered_sp), sprint_start = min(first_seen), by: {Sprint}
 | fieldsAdd delivery_pct = if(committed > 0, 100.0 * toDouble(delivered) / toDouble(committed), else: 0.0)
 | fieldsAdd points_pct = if(points_committed > 0, 100.0 * points_delivered / points_committed, else: 0.0)
 | sort Sprint desc

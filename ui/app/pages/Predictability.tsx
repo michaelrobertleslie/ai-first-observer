@@ -45,9 +45,31 @@ function SprintCommitment() {
   const query = sprintCommitmentQuery(capability);
   const { data, isLoading } = useDql({ query });
 
+  // Find the current (latest) sprint — first record since sorted desc
+  const currentSprint = data?.records?.[0]?.Sprint;
+
   const columns: Col[] = useMemo(
     () => [
-      { id: "Sprint", accessor: "Sprint", header: "Sprint", minWidth: 200 },
+      {
+        id: "Sprint", accessor: "Sprint", header: "Sprint", minWidth: 200,
+        cell: ({ value }: { value: unknown }) => {
+          const isCurrent = value === currentSprint;
+          return (
+            <span style={{ display: "flex", alignItems: "center", gap: 6, height: "100%", fontWeight: isCurrent ? 700 : 400 }}>
+              {String(value ?? "")}
+              {isCurrent && <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 4, background: Colors.Charts.Apdex.Excellent.Default, color: "#fff", fontWeight: 600 }}>CURRENT</span>}
+            </span>
+          );
+        },
+      },
+      {
+        id: "sprint_start", accessor: "sprint_start", header: "Started", minWidth: 110,
+        cell: ({ value }: { value: unknown }) => (
+          <span style={{ display: "flex", alignItems: "center", height: "100%", opacity: 0.7 }}>
+            {value ? String(value).substring(0, 10) : "—"}
+          </span>
+        ),
+      },
       { id: "committed", accessor: "committed", header: "Stories", minWidth: 90, alignment: "right" as const },
       { id: "delivered", accessor: "delivered", header: "Closed", minWidth: 90, alignment: "right" as const },
       {
@@ -91,7 +113,7 @@ function SprintCommitment() {
         },
       },
     ],
-    [],
+    [currentSprint],
   );
 
   return card(
