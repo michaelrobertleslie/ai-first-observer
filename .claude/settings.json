@@ -10,6 +10,7 @@
       "Bash(grep:*)",
       "Bash(find:*)",
       "Bash(wc:*)",
+      "Bash(cat ~/.dt-app/session)",
       "Read",
       "Write",
       "Edit",
