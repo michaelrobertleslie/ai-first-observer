@@ -45,7 +45,7 @@ const TIER_COLOURS: Record<string, string> = {
 
 function card(children: React.ReactNode) {
   return (
-    <Surface style={{ width: "100%" }}>
+    <Surface style={{ width: "100%", position: "relative" }}>
       <Flex flexDirection="column" gap={12} padding={24}>
         {children}
       </Flex>
@@ -96,10 +96,8 @@ function AdoptionHero() {
 
   return card(
     <>
-      <Flex gap={8} alignItems="center">
-        <Heading level={4}>Adoption Snapshot</Heading>
-        <QueryInspector query={query} title="Adoption Snapshot — DQL" />
-      </Flex>
+      <Heading level={4}>Adoption Snapshot</Heading>
+        <QueryInspector query={query} title="Adoption Snapshot — DQL" floatBottomRight />
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
         Repos scanned, context-engineering coverage, and average maturity score.
       </Paragraph>
@@ -169,10 +167,8 @@ function MaturityFunnel() {
 
   return card(
     <>
-      <Flex gap={8} alignItems="center">
-        <Heading level={4}>Maturity Funnel</Heading>
-        <QueryInspector query={query} title="Maturity Funnel — DQL" />
-      </Flex>
+      <Heading level={4}>Maturity Funnel</Heading>
+        <QueryInspector query={query} title="Maturity Funnel — DQL" floatBottomRight />
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
         Article tiers from autocomplete (none) through to full-stack (main + rules + skills + MCP).
       </Paragraph>
@@ -295,10 +291,8 @@ function RepoScorecard() {
 
   return card(
     <>
-      <Flex gap={8} alignItems="center">
-        <Heading level={4}>Per-repo Scorecard</Heading>
-        <QueryInspector query={query} title="Repo Scorecard — DQL" />
-      </Flex>
+      <Heading level={4}>Per-repo Scorecard</Heading>
+        <QueryInspector query={query} title="Repo Scorecard — DQL" floatBottomRight />
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
         Latest scan per repo. Click a repo name to open it in Bitbucket.
       </Paragraph>
@@ -435,10 +429,8 @@ function FailureModes() {
 
   return card(
     <>
-      <Flex gap={8} alignItems="center">
-        <Heading level={4}>Failure Modes</Heading>
-        <QueryInspector query={summaryQuery} title="Failure Modes — DQL" />
-      </Flex>
+      <Heading level={4}>Failure Modes</Heading>
+        <QueryInspector query={summaryQuery} title="Failure Modes — DQL" floatBottomRight />
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
         The five failure modes from the article, flagged across {total} repos. Each repo is checked against
         objective thresholds (no human grading) so the action list is reproducible. Rows in the table below are
@@ -594,10 +586,8 @@ function FirstAttemptPassTrend() {
 
   return card(
     <>
-      <Flex gap={8} alignItems="center">
-        <Heading level={4}>AI-PR First-attempt Pass Rate</Heading>
-        <QueryInspector query={query} title="First-attempt Pass Rate — DQL" />
-      </Flex>
+      <Heading level={4}>AI-PR First-attempt Pass Rate</Heading>
+        <QueryInspector query={query} title="First-attempt Pass Rate — DQL" floatBottomRight />
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
         Percentage of AI-assisted PRs merged with zero NEEDS_WORK reviews. Target for
         {" "}{capability.label}: <strong>{cfg.passRateTarget}%</strong>.
@@ -638,10 +628,8 @@ function Champions() {
 
   return card(
     <>
-      <Flex gap={8} alignItems="center">
-        <Heading level={4}>Champions</Heading>
-        <QueryInspector query={query} title="Champions — DQL" />
-      </Flex>
+      <Heading level={4}>Champions</Heading>
+        <QueryInspector query={query} title="Champions — DQL" floatBottomRight />
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
         Engineers actively maintaining context files (CLAUDE.md, AGENTS.md, .claude/rules, .claude/skills) — derived from
         Bitbucket commit history of those paths over the last 90 days. Champions emerge organically; you don't configure
@@ -731,10 +719,8 @@ function RecentAiPrs() {
 
   return card(
     <>
-      <Flex gap={8} alignItems="center">
-        <Heading level={4}>Recent AI-assisted PRs (14 days)</Heading>
-        <QueryInspector query={query} title="Recent AI PRs — DQL" />
-      </Flex>
+      <Heading level={4}>Recent AI-assisted PRs (14 days)</Heading>
+        <QueryInspector query={query} title="Recent AI PRs — DQL" floatBottomRight />
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
         Detected via Co-authored-by, branch name, and tag heuristics.
       </Paragraph>
@@ -803,10 +789,8 @@ function CorrectionHeatmap() {
 
   return card(
     <>
-      <Flex gap={8} alignItems="center">
-        <Heading level={4}>Correction Cycles (12 weeks)</Heading>
-        <QueryInspector query={query} title="Correction Heatmap — DQL" />
-      </Flex>
+      <Heading level={4}>Correction Cycles (12 weeks)</Heading>
+        <QueryInspector query={query} title="Correction Heatmap — DQL" floatBottomRight />
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
         Average comments and review rounds per AI-PR, by repo and week. Lower is better. An empty table means no
         AI-tagged PRs were detected in the window — either AI usage is genuinely low <em>or</em> engineers aren't
@@ -833,10 +817,8 @@ function AiVsHumanSplit() {
 
   return card(
     <>
-      <Flex gap={8} alignItems="center">
-        <Heading level={4}>AI-assisted vs Human-only PRs (30 days)</Heading>
-        <QueryInspector query={query} title="AI vs Human Split — DQL" />
-      </Flex>
+      <Heading level={4}>AI-assisted vs Human-only PRs (30 days)</Heading>
+        <QueryInspector query={query} title="AI vs Human Split — DQL" floatBottomRight />
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
         Paired comparison: same repos, same window, split by detected AI assistance.
       </Paragraph>
@@ -914,9 +896,7 @@ function ConfigurationCard() {
   const configured = cfg.repos.length > 0;
   return card(
     <>
-      <Flex gap={8} alignItems="center">
-        <Heading level={4}>Configuration</Heading>
-      </Flex>
+      <Heading level={4}>Configuration</Heading>
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
         Per-capability scanner config. Repos can be auto-discovered from Juno
         (Backstage catalog) via{" "}

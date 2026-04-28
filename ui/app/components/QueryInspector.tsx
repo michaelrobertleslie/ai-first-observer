@@ -14,9 +14,11 @@ import { getIntentLink } from "@dynatrace-sdk/navigation";
 export function QueryInspector({
   query,
   title,
+  floatBottomRight = false,
 }: {
   query: string;
   title?: string;
+  floatBottomRight?: boolean;
 }) {
   const [show, setShow] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -28,26 +30,37 @@ export function QueryInspector({
     });
   }, [query]);
 
+  const button = (
+    <button
+      onClick={() => setShow(true)}
+      title="Inspect the DQL query behind this data"
+      style={{
+        padding: "2px 6px",
+        fontSize: 10,
+        fontWeight: 600,
+        cursor: "pointer",
+        borderRadius: 3,
+        border: `1px solid ${Colors.Charts.Apdex.Fair.Default}`,
+        color: Colors.Charts.Apdex.Fair.Default,
+        background: "transparent",
+        fontFamily: "monospace",
+        lineHeight: 1.3,
+        opacity: floatBottomRight ? 0.45 : 1,
+      }}
+      onMouseEnter={(e) => { if (floatBottomRight) (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+      onMouseLeave={(e) => { if (floatBottomRight) (e.currentTarget as HTMLButtonElement).style.opacity = "0.45"; }}
+    >
+      ⟨/⟩ DQL
+    </button>
+  );
+
   return (
     <>
-      <button
-        onClick={() => setShow(true)}
-        title="Inspect the DQL query behind this data"
-        style={{
-          padding: "3px 8px",
-          fontSize: 11,
-          fontWeight: 600,
-          cursor: "pointer",
-          borderRadius: 4,
-          border: `1px solid ${Colors.Charts.Apdex.Fair.Default}`,
-          color: Colors.Charts.Apdex.Fair.Default,
-          background: "transparent",
-          fontFamily: "monospace",
-          lineHeight: 1.4,
-        }}
-      >
-        ⟨/⟩ DQL
-      </button>
+      {floatBottomRight ? (
+        <span style={{ position: "absolute", bottom: 8, right: 8, zIndex: 1 }}>{button}</span>
+      ) : (
+        button
+      )}
 
       <Sheet
         title={title ?? "DQL Query Inspector"}
