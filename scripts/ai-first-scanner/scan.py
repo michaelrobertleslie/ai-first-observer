@@ -50,20 +50,38 @@ DT_INGEST_URL = os.environ.get("DT_INGEST_URL", "")
 DT_INGEST_TOKEN = os.environ.get("DT_INGEST_TOKEN", "")
 
 
+def _keychain_secret(service: str) -> Optional[str]:
+    """Read a generic password from macOS Keychain by service name."""
+    try:
+        out = subprocess.check_output(
+            ["security", "find-generic-password", "-s", service, "-w"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+        return out.strip() or None
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+
+
 def bitbucket_pat() -> str:
     """Resolve PAT from env or macOS Keychain."""
     pat = os.environ.get("BITBUCKET_PAT")
     if pat:
         return pat
-    try:
-        out = subprocess.check_output(
-            ["security", "find-generic-password", "-s", "bitbucket-pat", "-w"],
-            stderr=subprocess.DEVNULL,
-            text=True,
-        )
-        return out.strip()
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        sys.exit("BITBUCKET_PAT not set and no Keychain entry found.")
+    pat = _keychain_secret("bitbucket-pat")
+    if pat:
+        return pat
+    sys.exit("BITBUCKET_PAT not set and no Keychain entry found.")
+
+
+def dt_ingest_token() -> str:
+    """Resolve Dynatrace ingest token from env or macOS Keychain (service: dt-ingest-token)."""
+    if DT_INGEST_TOKEN:
+        return DT_INGEST_TOKEN
+    tok = _keychain_secret("dt-ingest-token")
+    if tok:
+        return tok
+    sys.exit("DT_INGEST_TOKEN not set and no Keychain entry found (service 'dt-ingest-token').")
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -620,10 +638,11 @@ def repo_result_to_event(r: RepoScanResult) -> dict:
 
 
 def emit_events(events: list[dict]) -> None:
-    if not DT_INGEST_URL or not DT_INGEST_TOKEN:
-        sys.exit("DT_INGEST_URL and DT_INGEST_TOKEN must be set to emit.")
+    if not DT_INGEST_URL:
+        sys.exit("DT_INGEST_URL must be set to emit.")
+    token = dt_ingest_token()
     headers = {
-        "Authorization": f"Api-Token {DT_INGEST_TOKEN}",
+        "Authorization": f"Api-Token {token}",
         "Content-Type": "application/json",
     }
     # Batched in chunks of 100

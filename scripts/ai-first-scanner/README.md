@@ -16,6 +16,8 @@ Environment:
 # Required for emit
 export DT_INGEST_URL="https://<env>.live.dynatrace.com/api/v2/bizevents/ingest"
 export DT_INGEST_TOKEN="dt0c01.<api token with bizevents.ingest>"
+# ...or stash in macOS Keychain (service: dt-ingest-token):
+#   security add-generic-password -U -s dt-ingest-token -a "$USER" -w 'dt0c01.…'
 
 # Optional (defaults to lab Bitbucket; PAT auto-resolved from macOS Keychain)
 export BITBUCKET_BASE_URL="https://bitbucket.lab.dynatrace.org/rest/api/1.0"

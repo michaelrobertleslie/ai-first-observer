@@ -105,11 +105,23 @@ function PillarCard({ n, title, desc, metric, route, color, trend, trendGood }: 
         <Flex flexDirection="column" gap={8} padding={20} style={{ height: "100%" }}>
           <Flex gap={8} alignItems="center">
             <span style={{ fontSize: 20, fontWeight: 800, color, lineHeight: 1 }}>{n}</span>
-            <Heading level={5}>{title}</Heading>
+            <Heading level={5} style={{ lineHeight: 1.2 }}>{title}</Heading>
             {symbol && (
-              <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, color: trendColor }}
-                title={`Quarter-over-quarter: ${label}`}>
-                {symbol} {label}
+              <span
+                style={{
+                  marginLeft: "auto",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  fontSize: 11,
+                  lineHeight: 1.2,
+                  fontWeight: 600,
+                  color: trendColor,
+                }}
+                title={`Quarter-over-quarter: ${label}`}
+              >
+                <span style={{ fontSize: 10, lineHeight: 1 }}>{symbol}</span>
+                <span>{label}</span>
               </span>
             )}
           </Flex>
