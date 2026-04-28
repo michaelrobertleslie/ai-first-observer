@@ -523,7 +523,7 @@ export function aiFailureDetailQuery(cap: Capability): string {
          copy_paste = \`failure.copy_paste\`,
          main_tokens = \`context.main_file_tokens\`,
          main_age_days = \`context.main_file_age_days\`
-| sort score asc`;
+| sort score desc`;
 }
 
 /** Champion activity — who's actually maintaining context. */

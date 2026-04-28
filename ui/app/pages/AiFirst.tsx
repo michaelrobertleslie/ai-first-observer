@@ -548,7 +548,7 @@ function FailureModes() {
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
         The five failure modes from the article, flagged across {total} repos. Each repo is checked against
         objective thresholds (no human grading) so the action list is reproducible. Rows in the table below are
-        repos failing at least one check — sorted lowest-score first, so the worst offenders surface at the top.
+        repos failing at least one check, sorted highest-score first.
         A clean table is the goal.
       </Paragraph>
 
