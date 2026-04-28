@@ -46,7 +46,7 @@ const TIER_COLOURS: Record<string, string> = {
 function card(children: React.ReactNode) {
   return (
     <Surface style={{ width: "100%", position: "relative" }}>
-      <Flex flexDirection="column" gap={12} padding={24}>
+      <Flex flexDirection="column" gap={12} style={{ padding: "20px 24px 28px 24px" }}>
         {children}
       </Flex>
     </Surface>
@@ -942,21 +942,25 @@ export const AiFirst = () => {
   const cfg = aiFirstConfig(capability);
   const configured = cfg.repos.length > 0;
   return (
-    <Flex flexDirection="column" gap={24} padding={24}>
-      <Heading level={2}>Pillar 5: AI-First Adoption</Heading>
-      <Paragraph style={{ opacity: 0.7 }}>
-        Context-engineering signals from across the capability's repositories. Driven by
-        the AI-First scanner (scripts/ai-first-scanner/) plus PR review telemetry from
-        Bitbucket. Mirrors the article's framework: the four context layers, six failure
-        modes, and the maturity progression from autocomplete to full-stack.
-      </Paragraph>
-      <Paragraph style={{ opacity: 0.45, fontSize: 11, lineHeight: 1.5 }}>
-        <strong>Caveat on AI-PR detection</strong>: signals are <code>Co-authored-by:</code> trailers (Claude/Copilot/Cursor),
-        AI-prefixed branch names (<code>copilot/</code>, <code>ai/</code>, <code>claude/</code>), and explicit <code>[AI]</code> tags.
-        Engineers using Copilot inline or Claude Code without those markers won't be counted — so the AI cohort here is a
-        lower bound on real adoption, not the full picture. Push the team to keep co-author trailers on AI-assisted commits
-        if you want a truer signal.
-      </Paragraph>
+    <Flex flexDirection="column" gap={16} padding={24}>
+      {card(
+        <>
+          <Heading level={2}>Pillar 5: AI-First Adoption</Heading>
+          <Paragraph style={{ opacity: 0.7 }}>
+            Context-engineering signals from across the capability's repositories. Driven by
+            the AI-First scanner (scripts/ai-first-scanner/) plus PR review telemetry from
+            Bitbucket. Mirrors the article's framework: the four context layers, six failure
+            modes, and the maturity progression from autocomplete to full-stack.
+          </Paragraph>
+          <Paragraph style={{ opacity: 0.45, fontSize: 11, lineHeight: 1.5 }}>
+            <strong>Caveat on AI-PR detection</strong>: signals are <code>Co-authored-by:</code> trailers (Claude/Copilot/Cursor),
+            AI-prefixed branch names (<code>copilot/</code>, <code>ai/</code>, <code>claude/</code>), and explicit <code>[AI]</code> tags.
+            Engineers using Copilot inline or Claude Code without those markers won't be counted — so the AI cohort here is a
+            lower bound on real adoption, not the full picture. Push the team to keep co-author trailers on AI-assisted commits
+            if you want a truer signal.
+          </Paragraph>
+        </>,
+      )}
       {!configured && <ConfigurationCard />}
       {configured && (
         <>

@@ -57,7 +57,7 @@ export function QueryInspector({
   return (
     <>
       {floatBottomRight ? (
-        <span style={{ position: "absolute", bottom: 8, right: 8, zIndex: 1 }}>{button}</span>
+        <span style={{ position: "absolute", bottom: 10, right: 14, zIndex: 1 }}>{button}</span>
       ) : (
         button
       )}
