@@ -202,8 +202,8 @@ function RepoScorecard() {
         accessor: "repo_slug",
         header: "Repo",
         minWidth: 180,
-        cell: ({ value, row }: { value: unknown; row: { original: ResultRecord } }) => {
-          const url = String(row.original.repo_url ?? "");
+        cell: ({ value, rowData }: { value: unknown; rowData: ResultRecord }) => {
+          const url = String(rowData.repo_url ?? "");
           return (
             <a
               href={url}
@@ -337,9 +337,9 @@ function FailureModes() {
         accessor: "repo_slug",
         header: "Repo",
         minWidth: 180,
-        cell: ({ value, row }: { value: unknown; row: { original: ResultRecord } }) => (
+        cell: ({ value, rowData }: { value: unknown; rowData: ResultRecord }) => (
           <a
-            href={String(row.original.repo_url ?? "")}
+            href={String(rowData.repo_url ?? "")}
             target="_blank"
             rel="noopener noreferrer"
             style={{
@@ -550,8 +550,8 @@ function RecentAiPrs() {
         accessor: "title",
         header: "Title",
         minWidth: 280,
-        cell: ({ value, row }: { value: unknown; row: { original: ResultRecord } }) => {
-          const url = String(row.original.url ?? "");
+        cell: ({ value, rowData }: { value: unknown; rowData: ResultRecord }) => {
+          const url = String(rowData.url ?? "");
           if (!url) return <span>{String(value ?? "")}</span>;
           return (
             <a
