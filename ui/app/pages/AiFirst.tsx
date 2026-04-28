@@ -968,19 +968,20 @@ export const AiFirst = () => {
         lower bound on real adoption, not the full picture. Push the team to keep co-author trailers on AI-assisted commits
         if you want a truer signal.
       </Paragraph>
-      <ConfigurationCard />
+      {!configured && <ConfigurationCard />}
       {configured && (
         <>
           <AdoptionHero />
           <Flex flexDirection="column" gap={16}>
+            <FailureModes />
+            <RepoScorecard />
+            <FirstAttemptPassTrend />
             <MaturityFunnel />
             <AiVsHumanSplit />
-            <FirstAttemptPassTrend />
-            <RepoScorecard />
-            <FailureModes />
             <CorrectionHeatmap />
             <Champions />
             <RecentAiPrs />
+            <ConfigurationCard />
           </Flex>
         </>
       )}
