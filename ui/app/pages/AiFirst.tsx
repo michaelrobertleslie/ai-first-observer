@@ -69,6 +69,22 @@ function bool(value: unknown): string {
   return value === true ? "Yes" : "No";
 }
 
+/** Tick if `isHealthy` is true (good state), cross otherwise. Used in scorecard. */
+function healthMark(isHealthy: boolean): React.ReactNode {
+  return (
+    <span
+      aria-label={isHealthy ? "healthy" : "issue"}
+      style={{
+        color: isHealthy ? Colors.Charts.Apdex.Excellent.Default : Colors.Charts.Apdex.Unacceptable.Default,
+        fontWeight: 700,
+        fontSize: 16,
+      }}
+    >
+      {isHealthy ? "✓" : "✗"}
+    </span>
+  );
+}
+
 function colourForScore(score: number): string {
   if (score >= 80) return Colors.Charts.Apdex.Excellent.Default;
   if (score >= 60) return Colors.Charts.Apdex.Good.Default;
@@ -264,6 +280,19 @@ function MaturityFunnel() {
       ) : (
         empty("No scan data yet")
       )}
+      <Paragraph style={{ opacity: 0.45, fontSize: 11, lineHeight: 1.6, marginTop: 8 }}>
+        <strong>How to climb the funnel</strong> — each tier is additive. To move up, add the missing piece:
+        <br />
+        <strong>None → Main file only</strong>: add a primary instruction file at the repo root — <code>CLAUDE.md</code>, <code>AGENTS.md</code>, or <code>.github/copilot-instructions.md</code>. Project summary, file map, build/test commands, and the 3–5 rules that always apply. Under 2,500 tokens.
+        <br />
+        <strong>Main file only → Two-tier</strong>: extract scoped rules into <code>.claude/rules/</code> (or <code>.github/instructions/</code>) — separate files per topic (testing, build, accessibility, security, dql). The main file becomes an index that links to them. Lets the agent load only the rules relevant to the files it's editing.
+        <br />
+        <strong>Two-tier → + skills</strong>: add at least one reusable skill under <code>.claude/skills/</code> (or equivalent) — packaged know-how the agent can invoke for recurring tasks (e.g. "write a PDR", "run the reviewer pass", "generate a Strato component"). Pull from <code>papa-tools/skills/</code> rather than reinventing.
+        <br />
+        <strong>+ skills → Full stack</strong>: wire up MCP servers — commit an <code>.mcp.json</code> (or equivalent project config) that the agent reads on session start. Standard PAPA set: Dynatrace MCP (DQL, problems, entities), Juno MCP (catalogue, software templates), Strato/SDK knowledge bases. Reference <code>papa-tools/mcp/papa-mcp.json</code>.
+        <br />
+        Once at <strong>Full stack</strong>: keep the score above 65 by tending to the failure modes — bloat, staleness, missing self-heal, vagueness, copy-paste — visible in the per-repo scorecard below.
+      </Paragraph>
     </>,
   );
 }
@@ -384,6 +413,8 @@ function RepoScorecard() {
         <br />
         <strong>Score</strong>: 0–100 weighted by tier, anti-pattern density, self-healing, and MCP wiring.
         <br />
+        <strong>Health columns</strong> (Bloat-free, Fresh, Self-heal, Specific, Original): <span style={{ color: Colors.Charts.Apdex.Excellent.Default, fontWeight: 700 }}>✓</span> means healthy on that dimension, <span style={{ color: Colors.Charts.Apdex.Unacceptable.Default, fontWeight: 700 }}>✗</span> means a failure mode is present. All five ✓ across all your repos is the goal.
+        <br />
         <strong>Main tokens</strong>: estimated tokens in the primary instruction file (CLAUDE.md / AGENTS.md / copilot-instructions.md). Above ~2,500 tokens the file is flagged as <em>bloat</em> — it stops fitting reliably in the agent's context window.
         <br />
         <strong>Champion</strong>: most recent author of any context file in the last 90 days (commits to CLAUDE.md / AGENTS.md / .claude/rules / .claude/skills). Empty means nobody has touched the context recently.
@@ -457,51 +488,51 @@ function FailureModes() {
       {
         id: "bloat",
         accessor: "bloat",
-        header: "Bloat",
-        minWidth: 70,
+        header: "Bloat-free",
+        minWidth: 90,
         alignment: "center" as const,
         cell: ({ value }: { value: unknown }) => (
-          <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>{bool(value)}</span>
+          <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>{healthMark(value !== true)}</span>
         ),
       },
       {
         id: "staleness",
         accessor: "staleness",
-        header: "Stale",
+        header: "Fresh",
         minWidth: 70,
         alignment: "center" as const,
         cell: ({ value }: { value: unknown }) => (
-          <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>{bool(value)}</span>
+          <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>{healthMark(value !== true)}</span>
         ),
       },
       {
         id: "missing_sh",
         accessor: "missing_sh",
-        header: "No self-heal",
-        minWidth: 100,
+        header: "Self-heal",
+        minWidth: 90,
         alignment: "center" as const,
         cell: ({ value }: { value: unknown }) => (
-          <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>{bool(value)}</span>
+          <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>{healthMark(value !== true)}</span>
         ),
       },
       {
         id: "vagueness",
         accessor: "vagueness",
-        header: "Vague",
+        header: "Specific",
         minWidth: 80,
         alignment: "center" as const,
         cell: ({ value }: { value: unknown }) => (
-          <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>{bool(value)}</span>
+          <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>{healthMark(value !== true)}</span>
         ),
       },
       {
         id: "copy_paste",
         accessor: "copy_paste",
-        header: "Copy-paste",
-        minWidth: 100,
+        header: "Original",
+        minWidth: 90,
         alignment: "center" as const,
         cell: ({ value }: { value: unknown }) => (
-          <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>{bool(value)}</span>
+          <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>{healthMark(value !== true)}</span>
         ),
       },
       { id: "main_tokens", accessor: "main_tokens", header: "Tokens", minWidth: 80, alignment: "right" as const },
@@ -672,7 +703,7 @@ function FirstAttemptPassTrend() {
       <Heading level={4}>AI-PR First-attempt Pass Rate</Heading>
         <QueryInspector query={query} title="First-attempt Pass Rate — DQL" floatBottomRight />
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
-        Percentage of AI-assisted PRs merged with zero NEEDS_WORK reviews. Target for
+        Percentage of AI-assisted PRs merged with zero NEEDS_WORK reviews and no fix-up commits after the first review. Target for
         {" "}{capability.label}: <strong>{cfg.passRateTarget}%</strong>.
       </Paragraph>
       {isLoading ? (
@@ -908,7 +939,7 @@ function AiVsHumanSplit() {
       <Paragraph style={{ opacity: 0.45, fontSize: 11, lineHeight: 1.5 }}>
         <strong>AI detection</strong> looks for <code>Co-authored-by: Claude/Copilot/Cursor</code> trailers, <code>copilot/</code>/<code>ai/</code>/<code>claude/</code> branch prefixes, and <code>[AI]</code> markers. Most engineers don't tag AI usage today, so the AI cohort is a lower bound — actual AI use is likely far higher.
         <br />
-        <strong>First-attempt pass</strong> = no reviewer marked the PR as NEEDS_WORK. PAPA reviewers rarely use that status (they comment instead), so this rate sits near 100% for both cohorts. <em>Average comments</em> and <em>time to merge</em> are the more discriminating signals here.
+        <strong>First-attempt pass</strong> = no reviewer marked the PR as NEEDS_WORK <em>and</em> no commits were pushed after the first review or comment. The second clause catches the common PAPA pattern of reviewers leaving inline comments without flipping NEEDS_WORK \u2014 if the author had to push a fix-up commit, that's a fail. <em>Average comments</em> and <em>time to merge</em> are useful corroborating signals.
       </Paragraph>
       {isLoading ? (
         loading()

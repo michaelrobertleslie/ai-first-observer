@@ -553,15 +553,29 @@ def scan_pr(
 
     needs_work_count = 0
     comment_count = 0
-    for act in activities:
+    first_review_ts = 0
+    rescope_after_review = False
+    # Activities are typically returned newest-first; sort oldest-first for ordering checks.
+    ordered = sorted(activities, key=lambda a: a.get("createdDate", 0))
+    for act in ordered:
         action = act.get("action")
+        ts = act.get("createdDate", 0) or 0
         if action == "REVIEWED" and act.get("commentAction") is None:
-            # reviewer state change
             review = act.get("review", {}) or {}
             if review.get("status") == "NEEDS_WORK":
                 needs_work_count += 1
+            if first_review_ts == 0:
+                first_review_ts = ts
         if action == "COMMENTED":
             comment_count += 1
+            if first_review_ts == 0:
+                first_review_ts = ts
+        if action == "RESCOPED" and first_review_ts and ts > first_review_ts:
+            # Code pushed after the first review activity → rework before merge.
+            rescope_after_review = True
+
+    # First-attempt pass: no formal NEEDS_WORK, AND no commits pushed after first review.
+    first_attempt_pass = needs_work_count == 0 and not rescope_after_review
 
     created_ms = pr.get("createdDate", 0)
     merged_ms = pr.get("closedDate", 0)
@@ -583,7 +597,8 @@ def scan_pr(
         "pr.ai_signals": signals,
         "pr.comment_count": comment_count,
         "pr.review_rounds": needs_work_count,
-        "pr.first_attempt_pass": needs_work_count == 0,
+        "pr.rescope_after_review": rescope_after_review,
+        "pr.first_attempt_pass": first_attempt_pass,
         "pr.created": datetime.fromtimestamp(created_ms / 1000, tz=timezone.utc).isoformat()
         if created_ms
         else None,

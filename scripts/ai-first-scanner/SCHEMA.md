@@ -81,7 +81,8 @@ One event per merged PR. Run on Bitbucket webhook or daily backfill.
 | `pr.ai_signals` | array | e.g. `["copilot_in_message", "claude_coauthor", "ai_label", "ai_branch_name"]` |
 | `pr.comment_count` | long | Total review comments |
 | `pr.review_rounds` | long | Number of `NEEDS_WORK` reviews before approval |
-| `pr.first_attempt_pass` | boolean | `review_rounds == 0` |
+| `pr.rescope_after_review` | boolean | True if any commit was pushed after the first review/comment activity |
+| `pr.first_attempt_pass` | boolean | `review_rounds == 0 AND NOT rescope_after_review` |
 | `pr.created` | timestamp |  |
 | `pr.merged` | timestamp |  |
 | `pr.time_to_merge_hours` | double |  |
