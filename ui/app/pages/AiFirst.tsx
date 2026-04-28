@@ -112,7 +112,7 @@ function AdoptionHero() {
       ) : total === 0 ? (
         empty("No scan data yet. Run scripts/ai-first-scanner/scan.py --emit.")
       ) : (
-        <Flex gap={32} flexWrap="wrap">
+        <Flex gap={32} flexWrap="wrap" justifyContent="center">
           <KpiBlock value={String(total)} label="Repos scanned" />
           <KpiBlock value={`${withMain} (${pct(withMain)}%)`} label="With main file" />
           <KpiBlock
@@ -221,7 +221,7 @@ function KpiBlock({
   color?: string;
 }) {
   return (
-    <Flex flexDirection="column" gap={4} style={{ minWidth: 140 }}>
+    <Flex flexDirection="column" gap={4} alignItems="center" style={{ minWidth: 140, textAlign: "center" }}>
       <Heading level={2} style={{ color: color ?? "inherit", fontSize: 28 }}>
         {value}
       </Heading>
@@ -526,9 +526,9 @@ function FailureModes() {
       {sumLoading ? (
         loading()
       ) : (
-        <Flex gap={24} flexWrap="wrap">
+        <Flex gap={24} flexWrap="wrap" justifyContent="center">
           {summaryItems.map((item) => (
-            <Flex key={item.key} flexDirection="column" gap={2} style={{ minWidth: 180 }}>
+            <Flex key={item.key} flexDirection="column" gap={2} alignItems="center" style={{ minWidth: 180, textAlign: "center" }}>
               <Heading
                 level={3}
                 style={{
@@ -915,7 +915,7 @@ function AiVsHumanSplit() {
       ) : !ai && !human ? (
         empty("No PR data in window")
       ) : (
-        <Flex gap={32} flexWrap="wrap">
+        <Flex gap={32} flexWrap="wrap" justifyContent="center">
           <SplitBlock
             title="AI-assisted"
             color={Colors.Charts.Apdex.Good.Default}
@@ -943,7 +943,7 @@ function SplitBlock({
 }) {
   if (!data) {
     return (
-      <Flex flexDirection="column" gap={4} style={{ minWidth: 220 }}>
+      <Flex flexDirection="column" gap={4} alignItems="center" style={{ minWidth: 220, textAlign: "center" }}>
         <Heading level={5} style={{ color }}>
           {title}
         </Heading>
@@ -957,7 +957,7 @@ function SplitBlock({
   const comments = Number(data.avg_comments ?? 0).toFixed(1);
   const ttm = Math.round(Number(data.avg_ttm_hours ?? 0));
   return (
-    <Flex flexDirection="column" gap={4} style={{ minWidth: 220 }}>
+    <Flex flexDirection="column" gap={4} alignItems="center" style={{ minWidth: 220, textAlign: "center" }}>
       <Heading level={5} style={{ color }}>
         {title}
       </Heading>
@@ -995,7 +995,7 @@ function ConfigurationCard() {
           <code>python scan.py --config repos.yaml --capability "{capability.viProgram}" --emit</code>.
         </Paragraph>
       ) : (
-        <Flex gap={32} flexWrap="wrap">
+        <Flex gap={32} flexWrap="wrap" justifyContent="center">
           <KpiBlock value={String(cfg.repos.length)} label="Repos monitored" />
           <KpiBlock value={`${cfg.mainTokenBudget}`} label="Main token budget" />
           <KpiBlock value={`${cfg.prWindowDays}d`} label="PR scan window" />
