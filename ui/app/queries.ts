@@ -531,7 +531,8 @@ export function aiChampionsQuery(cap: Capability): string {
   return `fetch bizevents, from: now() - 7d
 | filter event.type == "ai_first.repo_scan"
   AND capability == "${cap.viProgram}"
-  AND \`champion.last_author\` != null
+  AND isNotNull(\`champion.last_author\`)
+  AND \`champion.last_author\` != ""
 | sort timestamp desc
 | dedup {\`repo.project\`, \`repo.slug\`}
 | summarize repos = count(),

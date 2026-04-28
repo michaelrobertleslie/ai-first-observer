@@ -302,6 +302,15 @@ function RepoScorecard() {
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
         Latest scan per repo. Click a repo name to open it in Bitbucket.
       </Paragraph>
+      <Paragraph style={{ opacity: 0.45, fontSize: 11, lineHeight: 1.5 }}>
+        <strong>Tier</strong>: maturity progression — none → main file only → two-tier (main + rules) → two-tier + skills → full stack (with MCP).
+        <br />
+        <strong>Score</strong>: 0–100 weighted by tier, anti-pattern density, self-healing, and MCP wiring.
+        <br />
+        <strong>Main tokens</strong>: estimated tokens in the primary instruction file (CLAUDE.md / AGENTS.md / copilot-instructions.md). Above ~2,500 tokens the file is flagged as <em>bloat</em> — it stops fitting reliably in the agent's context window.
+        <br />
+        <strong>Champion</strong>: most recent author of any context file in the last 90 days (commits to CLAUDE.md / AGENTS.md / .claude/rules / .claude/skills). Empty means nobody has touched the context recently.
+      </Paragraph>
       {isLoading ? loading() : (data?.records?.length ?? 0) > 0 ? (
         <DataTable data={data!.records!} columns={columns} sortable />
       ) : (
@@ -372,8 +381,9 @@ function FailureModes() {
         accessor: "bloat",
         header: "Bloat",
         minWidth: 70,
+        alignment: "center" as const,
         cell: ({ value }: { value: unknown }) => (
-          <span style={{ display: "flex", alignItems: "center", height: "100%" }}>{bool(value)}</span>
+          <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>{bool(value)}</span>
         ),
       },
       {
@@ -381,8 +391,9 @@ function FailureModes() {
         accessor: "staleness",
         header: "Stale",
         minWidth: 70,
+        alignment: "center" as const,
         cell: ({ value }: { value: unknown }) => (
-          <span style={{ display: "flex", alignItems: "center", height: "100%" }}>{bool(value)}</span>
+          <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>{bool(value)}</span>
         ),
       },
       {
@@ -390,8 +401,9 @@ function FailureModes() {
         accessor: "missing_sh",
         header: "No self-heal",
         minWidth: 100,
+        alignment: "center" as const,
         cell: ({ value }: { value: unknown }) => (
-          <span style={{ display: "flex", alignItems: "center", height: "100%" }}>{bool(value)}</span>
+          <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>{bool(value)}</span>
         ),
       },
       {
@@ -399,8 +411,9 @@ function FailureModes() {
         accessor: "vagueness",
         header: "Vague",
         minWidth: 80,
+        alignment: "center" as const,
         cell: ({ value }: { value: unknown }) => (
-          <span style={{ display: "flex", alignItems: "center", height: "100%" }}>{bool(value)}</span>
+          <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>{bool(value)}</span>
         ),
       },
       {
@@ -408,8 +421,9 @@ function FailureModes() {
         accessor: "copy_paste",
         header: "Copy-paste",
         minWidth: 100,
+        alignment: "center" as const,
         cell: ({ value }: { value: unknown }) => (
-          <span style={{ display: "flex", alignItems: "center", height: "100%" }}>{bool(value)}</span>
+          <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>{bool(value)}</span>
         ),
       },
       { id: "main_tokens", accessor: "main_tokens", header: "Tokens", minWidth: 80, alignment: "right" as const },
@@ -525,7 +539,9 @@ function Champions() {
         <QueryInspector query={query} title="Champions — DQL" />
       </Flex>
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
-        Engineers actively maintaining context files. Last 90 days.
+        Engineers actively maintaining context files (CLAUDE.md, AGENTS.md, .claude/rules, .claude/skills) — derived from
+        Bitbucket commit history of those paths over the last 90 days. Champions emerge organically; you don't configure
+        them. Repos with no champion show as empty here and indicate context is going stale.
       </Paragraph>
       {isLoading ? loading() : (data?.records?.length ?? 0) > 0 ? (
         <DataTable data={data!.records!} columns={columns} sortable />
@@ -688,7 +704,9 @@ function CorrectionHeatmap() {
         <QueryInspector query={query} title="Correction Heatmap — DQL" />
       </Flex>
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
-        Average comments and review rounds per AI-PR, by repo and week. Lower is better.
+        Average comments and review rounds per AI-PR, by repo and week. Lower is better. An empty table means no
+        AI-tagged PRs were detected in the window — either AI usage is genuinely low <em>or</em> engineers aren't
+        tagging their AI commits (no <code>Co-authored-by</code> trailer, no <code>copilot/</code> branches).
       </Paragraph>
       {isLoading ? loading() : (data?.records?.length ?? 0) > 0 ? (
         <DataTable data={data!.records!} columns={columns} sortable />
@@ -717,6 +735,11 @@ function AiVsHumanSplit() {
       </Flex>
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
         Paired comparison: same repos, same window, split by detected AI assistance.
+      </Paragraph>
+      <Paragraph style={{ opacity: 0.45, fontSize: 11, lineHeight: 1.5 }}>
+        <strong>AI detection</strong> looks for <code>Co-authored-by: Claude/Copilot/Cursor</code> trailers, <code>copilot/</code>/<code>ai/</code>/<code>claude/</code> branch prefixes, and <code>[AI]</code> markers. Most engineers don't tag AI usage today, so the AI cohort is a lower bound — actual AI use is likely far higher.
+        <br />
+        <strong>First-attempt pass</strong> = no reviewer marked the PR as NEEDS_WORK. PAPA reviewers rarely use that status (they comment instead), so this rate sits near 100% for both cohorts. <em>Average comments</em> and <em>time to merge</em> are the more discriminating signals here.
       </Paragraph>
       {isLoading ? (
         loading()
@@ -842,6 +865,13 @@ export const AiFirst = () => {
         the AI-First scanner (scripts/ai-first-scanner/) plus PR review telemetry from
         Bitbucket. Mirrors the article's framework: the four context layers, six failure
         modes, and the maturity progression from autocomplete to full-stack.
+      </Paragraph>
+      <Paragraph style={{ opacity: 0.45, fontSize: 11, lineHeight: 1.5 }}>
+        <strong>Caveat on AI-PR detection</strong>: signals are <code>Co-authored-by:</code> trailers (Claude/Copilot/Cursor),
+        AI-prefixed branch names (<code>copilot/</code>, <code>ai/</code>, <code>claude/</code>), and explicit <code>[AI]</code> tags.
+        Engineers using Copilot inline or Claude Code without those markers won't be counted — so the AI cohort here is a
+        lower bound on real adoption, not the full picture. Push the team to keep co-author trailers on AI-assisted commits
+        if you want a truer signal.
       </Paragraph>
       <ConfigurationCard />
       {configured && (
