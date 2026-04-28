@@ -14,7 +14,10 @@ Environment:
 
 ```bash
 # Required for emit
-export DT_INGEST_URL="https://<env>.live.dynatrace.com/api/v2/bizevents/ingest"
+# NOTE: classic API tokens (dt0c01.…) ingest at the *non-apps* host:
+#   https://<env>.live.dynatrace.com/api/v2/bizevents/ingest      (SaaS prod)
+#   https://<env>.dev.dynatracelabs.com/api/v2/bizevents/ingest   (dev/lab)
+export DT_INGEST_URL="https://umsaywsjuo.dev.dynatracelabs.com/api/v2/bizevents/ingest"
 export DT_INGEST_TOKEN="dt0c01.<api token with bizevents.ingest>"
 # ...or stash in macOS Keychain (service: dt-ingest-token):
 #   security add-generic-password -U -s dt-ingest-token -a "$USER" -w 'dt0c01.…'
