@@ -98,9 +98,15 @@ function AdoptionHero() {
     <>
       <Heading level={4}>Adoption Snapshot</Heading>
         <QueryInspector query={query} title="Adoption Snapshot — DQL" floatBottomRight />
-      <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
-        Repos scanned, context-engineering coverage, and average maturity score.
+      <Paragraph style={{ opacity: 0.6, fontSize: 12 }}>
+        Five headline numbers across the capability's repos: how many we scan, how many have any AI context at all,
+        how many go beyond a single main file, how many are at the top of the maturity ladder, and the rolled-up
+        score. The target on the score is set per capability — currently {cfg.scoreTarget}/100. A red/orange score
+        means there's slack in the system; green means we're meeting the bar.
       </Paragraph>
+
+      <AdoptionGuide target={cfg.scoreTarget} />
+
       {isLoading ? (
         loading()
       ) : total === 0 ? (
@@ -125,6 +131,83 @@ function AdoptionHero() {
         </Flex>
       )}
     </>,
+  );
+}
+
+/** Per-KPI definitions and "how to move it" guide for the Adoption Snapshot. */
+function AdoptionGuide({ target }: { target: number }) {
+  const items: Array<{ key: string; title: string; means: string; measured: string; improve: string }> = [
+    {
+      key: "scanned",
+      title: "Repos scanned",
+      means: "Total repos the scanner walked for this capability — the denominator for every other percentage.",
+      measured: "Comes from repos.yaml (or auto-discovery via Backstage). One bizevent per repo per scan.",
+      improve: "If the number looks low: add missing repos to repos.yaml, or run discover.py to refresh from Juno. If it includes archived/dead repos, mark them excluded so percentages aren't dragged down.",
+    },
+    {
+      key: "withMain",
+      title: "With main file",
+      means: "Repos that have at least one of: CLAUDE.md, AGENTS.md, .github/copilot-instructions.md, .cursorrules, or another recognised top-level instruction file. The most basic AI context.",
+      measured: "Boolean per repo: does the scanner find a main instruction file in the repo root?",
+      improve: "For each repo without one: drop in a CLAUDE.md or AGENTS.md with project summary, file map, build/test commands, and the 3–5 rules that always apply. Champions can template this.",
+    },
+    {
+      key: "twoTier",
+      title: "Two-tier or richer",
+      means: "Repos with a main file PLUS at least one scoped rules file (e.g. .claude/rules/, .github/instructions/, .cursor/rules/). Signals that context has been split by topic, not just dumped in one file.",
+      measured: "Has main file AND ≥1 file matching scoped-rules patterns.",
+      improve: "Pick one bloated main file, extract topic sections (testing.md, dql.md, deployment.md) into a rules/ folder, and reference them from main. Most repos can move from tier 1 to tier 2 in an afternoon.",
+    },
+    {
+      key: "fullStack",
+      title: "Full stack",
+      means: "Repos at the top of the maturity ladder: main + scoped rules + skills + MCP config. The article's 'context engineering at scale' end state.",
+      measured: "Has main file AND scoped rules AND ≥1 skill (.claude/skills or similar) AND an MCP config (.mcp.json or equivalent).",
+      improve: "This is a stretch goal — only invest where the repo is high-traffic and AI-assisted often. Add reusable skills for repeated workflows, and an MCP config so agents can call your tools/APIs directly.",
+    },
+    {
+      key: "score",
+      title: `Avg maturity score (target ${target})`,
+      means: "Per-repo score 0–100 averaged across the capability. The single number that summarises every other check.",
+      measured: "Sum of: main file (20) + within token budget (10) + self-heal directive (10) + ≥5 anti-patterns (15) + ≥2 rules files (15) + ≥1 skill (10) + MCP config (10) + main file < 60 days old (10).",
+      improve: `Pull up the Repo Scorecard below, sort by score ascending, and tackle the worst offenders first. Each missing component above is worth 10–20 points — the Failure Modes card tells you which specific gaps to close. Hitting ${target} usually means most repos have main + rules + anti-patterns + recent edits.`,
+    },
+  ];
+
+  return (
+    <details style={{
+      background: "rgba(255,255,255,0.02)",
+      border: "1px solid rgba(255,255,255,0.06)",
+      borderRadius: 4,
+      padding: "8px 16px",
+    }}>
+      <summary style={{
+        cursor: "pointer",
+        fontSize: 11,
+        opacity: 0.7,
+        textTransform: "uppercase",
+        letterSpacing: 1.2,
+        padding: "4px 0",
+      }}>
+        What each number means and how to improve it
+      </summary>
+      <Flex flexDirection="column" gap={12} style={{ paddingTop: 10 }}>
+        {items.map((it) => (
+          <Flex key={it.key} flexDirection="column" gap={2} style={{ paddingTop: 6, borderTop: "1px dashed rgba(255,255,255,0.08)" }}>
+            <Text style={{ fontSize: 12, fontWeight: 700 }}>{it.title}</Text>
+            <Text style={{ fontSize: 11, opacity: 0.7 }}>
+              <strong>What it is:</strong> {it.means}
+            </Text>
+            <Text style={{ fontSize: 11, opacity: 0.7 }}>
+              <strong>How it's measured:</strong> {it.measured}
+            </Text>
+            <Text style={{ fontSize: 11, opacity: 0.7 }}>
+              <strong>How to improve it:</strong> {it.improve}
+            </Text>
+          </Flex>
+        ))}
+      </Flex>
+    </details>
   );
 }
 
