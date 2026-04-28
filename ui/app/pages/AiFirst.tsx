@@ -532,38 +532,47 @@ function FailureModeGuide({ budget }: { budget: number }) {
   ];
 
   return (
-    <Flex flexDirection="column" gap={12} style={{
+    <details style={{
       background: "rgba(255,255,255,0.02)",
       border: "1px solid rgba(255,255,255,0.06)",
       borderRadius: 4,
-      padding: 16,
+      padding: "8px 16px",
     }}>
-      <Text style={{ fontSize: 11, opacity: 0.55, textTransform: "uppercase", letterSpacing: 1.2 }}>
+      <summary style={{
+        cursor: "pointer",
+        fontSize: 11,
+        opacity: 0.7,
+        textTransform: "uppercase",
+        letterSpacing: 1.2,
+        padding: "4px 0",
+      }}>
         Definitions, thresholds, and what good looks like
-      </Text>
-      {items.map((it) => (
-        <Flex key={it.key} flexDirection="column" gap={2} style={{ paddingTop: 6, borderTop: "1px dashed rgba(255,255,255,0.08)" }}>
-          <Text style={{ fontSize: 12, fontWeight: 700 }}>{it.title}</Text>
-          <Text style={{ fontSize: 11, opacity: 0.7 }}>
-            <strong>Detected as:</strong> {it.detect}
-          </Text>
-          <Text style={{ fontSize: 11, opacity: 0.7 }}>
-            <strong>Why it matters:</strong> {it.why}
-          </Text>
-          <Text style={{ fontSize: 11, opacity: 0.7 }}>
-            <strong>What good looks like:</strong> {it.good}
-          </Text>
-          <Text style={{ fontSize: 11, opacity: 0.7 }}>
-            <strong>How to tackle it:</strong> {it.fix}
-          </Text>
-        </Flex>
-      ))}
-      <Text style={{ fontSize: 11, opacity: 0.5, fontStyle: "italic", marginTop: 4 }}>
-        Token estimates use the rough heuristic of 4 characters per token. The {budget}-token budget is a per-capability
-        knob in <code>config.ts</code> / <code>repos.yaml</code> — raise it if your agent comfortably handles longer prompts,
-        lower it if you see attention drop-off mid-file.
-      </Text>
-    </Flex>
+      </summary>
+      <Flex flexDirection="column" gap={12} style={{ paddingTop: 10 }}>
+        {items.map((it) => (
+          <Flex key={it.key} flexDirection="column" gap={2} style={{ paddingTop: 6, borderTop: "1px dashed rgba(255,255,255,0.08)" }}>
+            <Text style={{ fontSize: 12, fontWeight: 700 }}>{it.title}</Text>
+            <Text style={{ fontSize: 11, opacity: 0.7 }}>
+              <strong>Detected as:</strong> {it.detect}
+            </Text>
+            <Text style={{ fontSize: 11, opacity: 0.7 }}>
+              <strong>Why it matters:</strong> {it.why}
+            </Text>
+            <Text style={{ fontSize: 11, opacity: 0.7 }}>
+              <strong>What good looks like:</strong> {it.good}
+            </Text>
+            <Text style={{ fontSize: 11, opacity: 0.7 }}>
+              <strong>How to tackle it:</strong> {it.fix}
+            </Text>
+          </Flex>
+        ))}
+        <Text style={{ fontSize: 11, opacity: 0.5, fontStyle: "italic", marginTop: 4 }}>
+          Token estimates use the rough heuristic of 4 characters per token. The {budget}-token budget is a per-capability
+          knob in <code>config.ts</code> / <code>repos.yaml</code> — raise it if your agent comfortably handles longer prompts,
+          lower it if you see attention drop-off mid-file.
+        </Text>
+      </Flex>
+    </details>
   );
 }
 
