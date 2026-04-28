@@ -323,6 +323,7 @@ function RepoScorecard() {
 /* ── Failure modes (counts + drill-down list) ────────── */
 function FailureModes() {
   const { capability } = useCapability();
+  const cfg = aiFirstConfig(capability);
   const summaryQuery = aiFailureModesQuery(capability);
   const detailQuery = aiFailureDetailQuery(capability);
   const { data: summary, isLoading: sumLoading } = useDql({ query: summaryQuery });
@@ -332,7 +333,7 @@ function FailureModes() {
   const total = Number(r?.total_repos ?? 0);
 
   const summaryItems = [
-    { key: "bloat", label: "Bloat (>2,500 tokens)", count: Number(r?.bloat ?? 0) },
+    { key: "bloat", label: `Bloat (>${cfg.mainTokenBudget.toLocaleString()} tokens)`, count: Number(r?.bloat ?? 0) },
     { key: "staleness", label: "Stale", count: Number(r?.staleness ?? 0) },
     { key: "missing_self_healing", label: "Missing self-heal", count: Number(r?.missing_self_healing ?? 0) },
     { key: "vagueness", label: "Vague (low anti-pattern density)", count: Number(r?.vagueness ?? 0) },
@@ -439,8 +440,14 @@ function FailureModes() {
         <QueryInspector query={summaryQuery} title="Failure Modes — DQL" />
       </Flex>
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
-        Article's six failure modes flagged across {total} repos. Action list, not a vanity dashboard.
+        The five failure modes from the article, flagged across {total} repos. Each repo is checked against
+        objective thresholds (no human grading) so the action list is reproducible. Rows in the table below are
+        repos failing at least one check — sorted lowest-score first, so the worst offenders surface at the top.
+        A clean table is the goal.
       </Paragraph>
+
+      <FailureModeGuide budget={cfg.mainTokenBudget} />
+
       {sumLoading ? (
         loading()
       ) : (
@@ -469,6 +476,94 @@ function FailureModes() {
         <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>No failures flagged.</Paragraph>
       )}
     </>,
+  );
+}
+
+/** Small subcomponent: per-mode definitions and "what good looks like" guidance. */
+function FailureModeGuide({ budget }: { budget: number }) {
+  const items: Array<{
+    key: string;
+    title: string;
+    detect: string;
+    why: string;
+    good: string;
+    fix: string;
+  }> = [
+    {
+      key: "bloat",
+      title: "Bloat",
+      detect: `Main instruction file > ${budget} tokens (≈ ${Math.round(budget * 4 / 1000)}k characters).`,
+      why: "Long main files crowd the context window. Agents skim later sections, ignore mid-file rules, and silently degrade as the file grows. Symptom: same advice gets ignored, especially anti-patterns buried halfway down.",
+      good: `Main file ≤ ${budget} tokens. Stable conventions and long lists live in scoped rules files (.claude/rules/, .github/instructions/) loaded only when relevant. Main file is a short index that routes to detail.`,
+      fix: "Move sections to rules files by topic (testing.md, dql.md, deployment.md). Keep main file as: project summary, file map, the 3–5 rules that ALWAYS apply, links to scoped rules.",
+    },
+    {
+      key: "staleness",
+      title: "Staleness",
+      detect: "Main file present AND last edited > 90 days ago AND the repo itself has commits in the last 30 days.",
+      why: "Active code + frozen instructions = drift. Agents follow obsolete patterns; reviewers waste cycles correcting the same thing. The repo's moving but its 'how to work here' isn't.",
+      good: "Main file is touched whenever a convention changes. A heartbeat of small commits to CLAUDE.md / AGENTS.md is healthier than one big rewrite a year.",
+      fix: "Add a 'review main file' line to your sprint checklist. Every PR that introduces a new pattern should update or link to the relevant rule. Champions (see table below) are the early-warning system here.",
+    },
+    {
+      key: "missing_self_healing",
+      title: "Missing self-heal",
+      detect: "Main file present but contains no self-healing instruction (no phrase like 'flag the discrepancy', 'self-healing', 'contradicts these instructions', 'if you encounter a pattern').",
+      why: "Without a self-heal directive, agents silently follow stale or contradictory rules instead of surfacing them. You only learn the context is wrong when something breaks in review.",
+      good: "Main file contains an explicit instruction telling the agent to call out drift. Treats the context as a living system, not a one-shot prompt.",
+      fix: "Add a section like: 'If you encounter a pattern in this codebase that contradicts these instructions, stop and flag the discrepancy. Do not silently follow either path.'",
+    },
+    {
+      key: "vagueness",
+      title: "Vagueness",
+      detect: "Main file present AND > 500 tokens AND fewer than 3 anti-pattern markers (do not / never / avoid / forbidden / banned / don't).",
+      why: "Positive-only instructions ('do X') underperform. Agents guess on edge cases and reproduce the patterns you're trying to remove. The high-value content is the explicit don'ts — that's where humans encode hard-won lessons.",
+      good: "A 'Forbidden Patterns' or 'Anti-patterns' section with concrete don'ts ('never import from app/legacy/', 'do not call X directly — use Y', 'avoid setTimeout in tests'). Specific, not generic.",
+      fix: "Walk through last quarter's review comments. Every 'please don't do this' that appeared more than once → an anti-pattern entry. Aim for ≥ 5 concrete don'ts in the main file or a dedicated anti-patterns rule.",
+    },
+    {
+      key: "copy_paste",
+      title: "Copy-paste",
+      detect: "Two or more repos share an identical main file hash — the same content has been copied verbatim instead of tailored.",
+      why: "A copied CLAUDE.md tells the agent generic things about a fictional 'this project' instead of the real one. Worst when teams template a starter file and never replace it. Agents end up with confident-sounding but wrong context.",
+      good: "Each repo's main file is specific: file structure, real anti-patterns from THAT codebase, build/test commands that work HERE.",
+      fix: "Identify the duplicate cluster (same hash). Pick one repo as the reference, tailor each clone to its own conventions. Shared rules belong in a separate rules file with a shared link, not duplicated content.",
+    },
+  ];
+
+  return (
+    <Flex flexDirection="column" gap={12} style={{
+      background: "rgba(255,255,255,0.02)",
+      border: "1px solid rgba(255,255,255,0.06)",
+      borderRadius: 4,
+      padding: 16,
+    }}>
+      <Text style={{ fontSize: 11, opacity: 0.55, textTransform: "uppercase", letterSpacing: 1.2 }}>
+        Definitions, thresholds, and what good looks like
+      </Text>
+      {items.map((it) => (
+        <Flex key={it.key} flexDirection="column" gap={2} style={{ paddingTop: 6, borderTop: "1px dashed rgba(255,255,255,0.08)" }}>
+          <Text style={{ fontSize: 12, fontWeight: 700 }}>{it.title}</Text>
+          <Text style={{ fontSize: 11, opacity: 0.7 }}>
+            <strong>Detected as:</strong> {it.detect}
+          </Text>
+          <Text style={{ fontSize: 11, opacity: 0.7 }}>
+            <strong>Why it matters:</strong> {it.why}
+          </Text>
+          <Text style={{ fontSize: 11, opacity: 0.7 }}>
+            <strong>What good looks like:</strong> {it.good}
+          </Text>
+          <Text style={{ fontSize: 11, opacity: 0.7 }}>
+            <strong>How to tackle it:</strong> {it.fix}
+          </Text>
+        </Flex>
+      ))}
+      <Text style={{ fontSize: 11, opacity: 0.5, fontStyle: "italic", marginTop: 4 }}>
+        Token estimates use the rough heuristic of 4 characters per token. The {budget}-token budget is a per-capability
+        knob in <code>config.ts</code> / <code>repos.yaml</code> — raise it if your agent comfortably handles longer prompts,
+        lower it if you see attention drop-off mid-file.
+      </Text>
+    </Flex>
   );
 }
 
