@@ -1,0 +1,91 @@
+# AI-First scanner configuration.
+#
+# Each capability can either:
+#   - list `repos:` explicitly, or
+#   - set `juno: {discover: true, slug: <capability-slug>}` and let
+#     scripts/ai-first-scanner/discover.py populate `repos:` from Juno
+#     (Backstage catalog) automatically.
+#
+# Per-capability overrides are optional. Defaults match the article's targets:
+#   main_token_budget: 2500    (above this main file flagged as "bloat")
+#   pr_window_days: 14         (PR scan window for AI-assistance signals)
+#   pass_rate_target: 70       (target first-attempt pass rate, %)
+#   score_target: 60           (target average maturity score, 0-100)
+
+defaults:
+  main_token_budget: 2500
+  pr_window_days: 14
+  pass_rate_target: 70
+  score_target: 60
+  ai_co_author_markers:
+    - "Co-authored-by: Claude"
+    - "Co-authored-by: GitHub Copilot"
+    - "Co-authored-by: Cursor"
+    - "🤖 Generated with"
+    - "[AI]"
+    - "[ai-generated]"
+    - "[copilot]"
+    - "[claude]"
+  ai_branch_patterns:
+    - "^copilot/"
+    - "^ai/"
+    - "^claude/"
+    - "-ai-"
+
+capabilities:
+  - name: "Platform Apps"
+    juno:
+      discover: true
+      slug: "platform-apps-papa"
+      extra_repos:           # always include these even if Juno doesn't return them
+        - "APPFW/papa-tools"
+    main_token_budget: 2500
+    pr_window_days: 14
+    pass_rate_target: 75
+    score_target: 65
+    # Populated 2026-04 from Juno catalog (kind=group,spec.capability=platform-apps-papa
+    # then kind=component,spec.owner=default/<team> for each of the 15 PAPA teams).
+    # RX/cluster excluded — it's a shared monorepo of many teams, not PAPA-scoped.
+    repos:
+      - APPFW/app-shell
+      - APPFW/dynatrace-sdk
+      - APPFW/papa-tools
+      - APPS/dashboard-app
+      - APPS/launcher
+      - APPS/notebooks-app
+      - APPS/onion-logs
+      - APPS/papa-playground-app
+      - APPS/segments-management
+      - APPS/smartscape-app
+      - PFS/public-access-service
+      - PFS/search-service
+
+  - name: "Platform Services"
+    juno:
+      discover: true
+      slug: "platform-services-ps"
+    repos: []
+
+  - name: "App Development"
+    juno:
+      discover: true
+      slug: "app-development"
+    repos: []
+
+  - name: "Grail"
+    juno:
+      discover: true
+      slug: "grail"
+    repos: []
+
+  - name: "Data Intelligence"
+    juno:
+      discover: true
+      slug: "data-intelligence"
+    repos: []
+
+  - name: "OpenPipeline"
+    juno:
+      discover: true
+      slug: "openpipeline-previous-ppx"
+    repos: []

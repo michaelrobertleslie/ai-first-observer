@@ -24,6 +24,9 @@ export const Header = () => {
         <AppHeader.NavItem as={Link} to="/devex">
           DevEx
         </AppHeader.NavItem>
+        <AppHeader.NavItem as={Link} to="/ai-first">
+          AI-First
+        </AppHeader.NavItem>
       </AppHeader.NavItems>
       <AppHeader.ActionItems>
         <div style={{ minWidth: 220 }}>

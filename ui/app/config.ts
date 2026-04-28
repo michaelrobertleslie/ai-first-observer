@@ -15,6 +15,63 @@ export interface JunoLink {
   url: string;
 }
 
+/**
+ * AI-First Adoption configuration. All fields optional; defaults are applied
+ * by `aiFirstConfig(cap)` below. The same structure is mirrored in
+ * `scripts/ai-first-scanner/repos.yaml` so the scanner and the app agree.
+ */
+export interface AIFirstConfig {
+  /** Bitbucket repos to scan, in `PROJECT/slug` form */
+  repos: string[];
+  /** Above this token count the main file is flagged as "bloat" (default 2500) */
+  mainTokenBudget?: number;
+  /** How many days of merged PRs to scan for AI-assistance signals (default 14) */
+  prWindowDays?: number;
+  /** Target first-attempt pass rate for AI-assisted PRs, % (default 70) */
+  passRateTarget?: number;
+  /** Target maturity score across the capability, 0-100 (default 60) */
+  scoreTarget?: number;
+  /** Substrings in commit messages that mark a PR as AI-assisted */
+  aiCoAuthorMarkers?: string[];
+  /** Branch name regex prefixes that mark a PR as AI-assisted (e.g. `^copilot/`) */
+  aiBranchPatterns?: string[];
+  /** Optional URL of the scanner runbook (Confluence, README, Workflow) */
+  runbookUrl?: string;
+}
+
+const DEFAULT_AI_FIRST: Required<Omit<AIFirstConfig, "repos" | "runbookUrl">> = {
+  mainTokenBudget: 2500,
+  prWindowDays: 14,
+  passRateTarget: 70,
+  scoreTarget: 60,
+  aiCoAuthorMarkers: [
+    "Co-authored-by: Claude",
+    "Co-authored-by: GitHub Copilot",
+    "Co-authored-by: Cursor",
+    "🤖 Generated with",
+    "[AI]",
+    "[ai-generated]",
+    "[copilot]",
+    "[claude]",
+  ],
+  aiBranchPatterns: ["^copilot/", "^ai/", "^claude/", "-ai-"],
+};
+
+/** Resolve the effective AI-First config for a capability, applying defaults. */
+export function aiFirstConfig(cap: Capability): Required<Omit<AIFirstConfig, "runbookUrl">> & { runbookUrl?: string } {
+  const c = cap.aiFirst;
+  return {
+    repos: c?.repos ?? [],
+    mainTokenBudget: c?.mainTokenBudget ?? DEFAULT_AI_FIRST.mainTokenBudget,
+    prWindowDays: c?.prWindowDays ?? DEFAULT_AI_FIRST.prWindowDays,
+    passRateTarget: c?.passRateTarget ?? DEFAULT_AI_FIRST.passRateTarget,
+    scoreTarget: c?.scoreTarget ?? DEFAULT_AI_FIRST.scoreTarget,
+    aiCoAuthorMarkers: c?.aiCoAuthorMarkers ?? DEFAULT_AI_FIRST.aiCoAuthorMarkers,
+    aiBranchPatterns: c?.aiBranchPatterns ?? DEFAULT_AI_FIRST.aiBranchPatterns,
+    runbookUrl: c?.runbookUrl,
+  };
+}
+
 export interface Capability {
   /** Display name shown in the UI */
   label: string;
@@ -30,6 +87,9 @@ export interface Capability {
   junoLinks?: JunoLink[];
   /** URL to external adoption metrics dashboard (optional) */
   adoptionDashboardUrl?: string;
+  /** AI-First Adoption pillar configuration. Without this, the AI-First page
+   *  shows a "not configured" state for the capability. */
+  aiFirst?: AIFirstConfig;
 }
 
 const SCORECARD_BASE = "https://dre63214.apps.dynatrace.com/ui/apps/dynatrace.dashboards/dashboard/monaco-643204c8-ddb7-3891-9842-063f1dc1b1cf#from=now%28%29-14d&to=now%28%29&vfilter_assetVersion=summary&vfilter_asset=";
@@ -71,6 +131,29 @@ export const CAPABILITIES: Record<string, Capability> = {
       { label: "DQL Builder (SDK)", url: "https://juno.internal.dynatrace.com/catalog/dynatrace-sdk/component/dynatrace-sdk_dql-builder" },
     ],
     adoptionDashboardUrl: "https://dre63214.apps.dynatrace.com/ui/apps/dynatrace.dashboards/dashboard/8e897b01-6d0e-41a1-b77b-46c9b867373d#from=-12w%40w&to=%40w",
+    aiFirst: {
+      // Populated 2026-04 from Juno (Backstage catalog) — components owned by
+      // any of the 15 PAPA teams (kind=group,spec.capability=platform-apps-papa).
+      repos: [
+        "APPFW/app-shell",
+        "APPFW/dynatrace-sdk",
+        "APPFW/papa-tools",
+        "APPS/dashboard-app",
+        "APPS/launcher",
+        "APPS/notebooks-app",
+        "APPS/onion-logs",
+        "APPS/papa-playground-app",
+        "APPS/segments-management",
+        "APPS/smartscape-app",
+        "PFS/public-access-service",
+        "PFS/search-service",
+      ],
+      mainTokenBudget: 2500,
+      prWindowDays: 14,
+      passRateTarget: 70,
+      scoreTarget: 60,
+      runbookUrl: "https://dt-rnd.atlassian.net/wiki/spaces/PAPA/pages/ai-first-scanner",
+    },
   },
   PS: {
     label: "Platform Services",

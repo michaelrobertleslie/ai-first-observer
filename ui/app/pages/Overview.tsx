@@ -58,6 +58,7 @@ const PILLAR_COLORS = [
   Colors.Charts.Apdex.Good.Default,
   Colors.Charts.Apdex.Fair.Default,
   Colors.Charts.Apdex.Poor.Default,
+  Colors.Charts.Apdex.Excellent.Default,
 ];
 
 /** Compute quarter-over-quarter trend from monthly records.
@@ -247,6 +248,11 @@ export const Overview = () => {
           desc="Identify bottlenecks, reduce friction, and empower engineers to solve their own problems."
           metric="Sprint velocity & cycle time →"
           trend={devexDirection} trendGood="down"
+        />
+        <PillarCard
+          n="5" title="AI-First Adoption" route="/ai-first" color={PILLAR_COLORS[4]}
+          desc="Context-engineering coverage and AI-PR review-iteration health across the capability's repos."
+          metric="Maturity tiers · failure modes · champion activity →"
         />
       </Flex>
 

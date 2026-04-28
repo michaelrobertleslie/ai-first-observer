@@ -431,3 +431,191 @@ export function fixVersionChangesExpandedQuery(cap: Capability): string {
 | filter snapshots >= 2 AND latest_fv != earliest_fv
 | fields key, summary, latest_status, earliest_fv, latest_fv, latest_target`;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   PILLAR 5 — AI-FIRST ADOPTION
+   Driven by ai_first.repo_scan and ai_first.pr_event bizevents
+   from scripts/ai-first-scanner/
+   ═══════════════════════════════════════════════════════════════ */
+
+/** Latest scan per repo. Used by coverage funnel, scorecard, failure flags. */
+export function aiRepoLatestScanQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 7d
+| filter event.type == "ai_first.repo_scan"
+  AND capability == "${cap.viProgram}"
+| sort timestamp desc
+| dedup {\`repo.project\`, \`repo.slug\`}
+| fields repo_project = \`repo.project\`,
+         repo_slug = \`repo.slug\`,
+         repo_name = \`repo.name\`,
+         repo_url = \`repo.url\`,
+         last_commit_age = \`repo.last_commit_age_days\`,
+         main_present = \`context.main_file_present\`,
+         main_path = \`context.main_file_path\`,
+         main_tokens = \`context.main_file_tokens\`,
+         main_age_days = \`context.main_file_age_days\`,
+         rules_count = \`context.rules_files_count\`,
+         rules_tokens = \`context.rules_files_total_tokens\`,
+         skills_count = \`context.skills_count\`,
+         anti_patterns = \`context.anti_pattern_count\`,
+         self_healing = \`context.self_healing_present\`,
+         mcp_present = \`context.mcp_config_present\`,
+         mcp_servers = \`context.mcp_servers_count\`,
+         tier = \`maturity.tier\`,
+         score = \`maturity.score\`,
+         f_bloat = \`failure.bloat\`,
+         f_staleness = \`failure.staleness\`,
+         f_missing_sh = \`failure.missing_self_healing\`,
+         f_vagueness = \`failure.vagueness\`,
+         f_copy_paste = \`failure.copy_paste\`,
+         champion_author = \`champion.last_author\`,
+         champion_touches_90d = \`champion.touches_90d\`,
+         champion_authors_90d = \`champion.unique_authors_90d\`
+| sort score desc, repo_slug asc`;
+}
+
+/** Maturity tier counts — coverage funnel data. */
+export function aiMaturityFunnelQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 7d
+| filter event.type == "ai_first.repo_scan"
+  AND capability == "${cap.viProgram}"
+| sort timestamp desc
+| dedup {\`repo.project\`, \`repo.slug\`}
+| summarize repo_count = count(), by: {tier = \`maturity.tier\`}
+| sort tier asc`;
+}
+
+/** Failure-mode flag counts across the capability. */
+export function aiFailureModesQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 7d
+| filter event.type == "ai_first.repo_scan"
+  AND capability == "${cap.viProgram}"
+| sort timestamp desc
+| dedup {\`repo.project\`, \`repo.slug\`}
+| summarize bloat = countIf(\`failure.bloat\` == true),
+            staleness = countIf(\`failure.staleness\` == true),
+            missing_self_healing = countIf(\`failure.missing_self_healing\` == true),
+            vagueness = countIf(\`failure.vagueness\` == true),
+            copy_paste = countIf(\`failure.copy_paste\` == true),
+            total_repos = count()`;
+}
+
+/** Repos failing one or more checks — actionable list. */
+export function aiFailureDetailQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 7d
+| filter event.type == "ai_first.repo_scan"
+  AND capability == "${cap.viProgram}"
+| sort timestamp desc
+| dedup {\`repo.project\`, \`repo.slug\`}
+| filter \`failure.bloat\` == true
+       OR \`failure.staleness\` == true
+       OR \`failure.missing_self_healing\` == true
+       OR \`failure.vagueness\` == true
+       OR \`failure.copy_paste\` == true
+| fields repo_slug = \`repo.slug\`,
+         repo_url = \`repo.url\`,
+         tier = \`maturity.tier\`,
+         score = \`maturity.score\`,
+         bloat = \`failure.bloat\`,
+         staleness = \`failure.staleness\`,
+         missing_sh = \`failure.missing_self_healing\`,
+         vagueness = \`failure.vagueness\`,
+         copy_paste = \`failure.copy_paste\`,
+         main_tokens = \`context.main_file_tokens\`,
+         main_age_days = \`context.main_file_age_days\`
+| sort score asc`;
+}
+
+/** Champion activity — who's actually maintaining context. */
+export function aiChampionsQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 7d
+| filter event.type == "ai_first.repo_scan"
+  AND capability == "${cap.viProgram}"
+  AND \`champion.last_author\` != null
+| sort timestamp desc
+| dedup {\`repo.project\`, \`repo.slug\`}
+| summarize repos = count(),
+            total_touches = sum(\`champion.touches_90d\`),
+            by: {champion = \`champion.last_author\`}
+| sort total_touches desc
+| limit 25`;
+}
+
+/** AI-PR first-attempt pass rate — weekly trend across the capability. */
+export function aiPrFirstAttemptTrendQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 90d
+| filter event.type == "ai_first.pr_event"
+  AND capability == "${cap.viProgram}"
+  AND \`pr.is_ai_assisted\` == true
+| fieldsAdd week = formatTimestamp(toTimestamp(\`pr.merged\`), format: "yyyy-'W'ww")
+| summarize total_prs = count(),
+            first_attempt = countIf(\`pr.first_attempt_pass\` == true),
+            by: {week}
+| fieldsAdd pass_rate = if(total_prs > 0, toDouble(first_attempt) / toDouble(total_prs) * 100.0, else: 0.0)
+| sort week asc`;
+}
+
+/** AI vs human PR comparison — review rounds and first-attempt pass. */
+export function aiPrSplitQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 30d
+| filter event.type == "ai_first.pr_event"
+  AND capability == "${cap.viProgram}"
+| summarize total_prs = count(),
+            first_attempt = countIf(\`pr.first_attempt_pass\` == true),
+            avg_rounds = avg(\`pr.review_rounds\`),
+            avg_comments = avg(\`pr.comment_count\`),
+            avg_ttm_hours = avg(\`pr.time_to_merge_hours\`),
+            by: {is_ai = \`pr.is_ai_assisted\`}
+| fieldsAdd cohort = if(is_ai == true, "AI-assisted", else: "Human-only"),
+            pass_rate = if(total_prs > 0, toDouble(first_attempt) / toDouble(total_prs) * 100.0, else: 0.0)
+| sort cohort asc`;
+}
+
+/** Per-repo correction-cycle heatmap data: comments per AI PR over weeks. */
+export function aiCorrectionHeatmapQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 84d
+| filter event.type == "ai_first.pr_event"
+  AND capability == "${cap.viProgram}"
+  AND \`pr.is_ai_assisted\` == true
+| fieldsAdd week = formatTimestamp(toTimestamp(\`pr.merged\`), format: "yyyy-'W'ww")
+| summarize avg_comments = avg(\`pr.comment_count\`),
+            avg_rounds = avg(\`pr.review_rounds\`),
+            pr_count = count(),
+            by: {repo = \`repo.slug\`, week}
+| sort repo asc, week asc`;
+}
+
+/** Adoption summary KPI for the Overview hero. */
+export function aiAdoptionSummaryQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 7d
+| filter event.type == "ai_first.repo_scan"
+  AND capability == "${cap.viProgram}"
+| sort timestamp desc
+| dedup {\`repo.project\`, \`repo.slug\`}
+| summarize total = count(),
+            with_main = countIf(\`context.main_file_present\` == true),
+            two_tier_plus = countIf(in(\`maturity.tier\`, "two_tier", "two_tier_skills", "full_stack")),
+            full_stack = countIf(\`maturity.tier\` == "full_stack"),
+            avg_score = avg(\`maturity.score\`)`;
+}
+
+/** Recent AI-assisted PRs detail — drill-down list. */
+export function aiRecentPrsQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 14d
+| filter event.type == "ai_first.pr_event"
+  AND capability == "${cap.viProgram}"
+  AND \`pr.is_ai_assisted\` == true
+| fields repo = \`repo.slug\`,
+         pr_id = \`pr.id\`,
+         title = \`pr.title\`,
+         url = \`pr.url\`,
+         author = \`pr.author\`,
+         signals = \`pr.ai_signals\`,
+         comments = \`pr.comment_count\`,
+         rounds = \`pr.review_rounds\`,
+         first_pass = \`pr.first_attempt_pass\`,
+         ttm_hours = \`pr.time_to_merge_hours\`,
+         merged = \`pr.merged\`
+| sort merged desc
+| limit 50`;
+}

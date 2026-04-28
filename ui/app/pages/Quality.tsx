@@ -16,6 +16,7 @@ import {
   derCustomerSplitRollingQuery,
   prodBugsByComponentQuery,
   recentProdBugsQuery,
+  aiPrSplitQuery,
 } from "../queries";
 import { QueryInspector } from "../components/QueryInspector";
 
@@ -322,7 +323,66 @@ function Scorecards() {
   );
 }
 
-/* ── Page ────────────────────────────────────────────── */
+/* ── AI-assisted vs human PR quality split ─────────── */
+function AiVsHumanPrQuality() {
+  const { capability } = useCapability();
+  const query = aiPrSplitQuery(capability);
+  const { data, isLoading } = useDql({ query });
+  const rows = data?.records ?? [];
+  const ai = rows.find((r) => r.is_ai === true) ?? rows.find((r) => r.cohort === "AI-assisted");
+  const human = rows.find((r) => r.is_ai === false) ?? rows.find((r) => r.cohort === "Human-only");
+
+  const block = (title: string, color: string, r: ResultRecord | undefined) => {
+    if (!r) {
+      return (
+        <Flex flexDirection="column" gap={4} style={{ minWidth: 220 }}>
+          <Heading level={5} style={{ color }}>{title}</Heading>
+          <Paragraph style={{ opacity: 0.5 }}>No data</Paragraph>
+        </Flex>
+      );
+    }
+    const total = Number(r.total_prs ?? 0);
+    const passRate = Math.round(Number(r.pass_rate ?? 0));
+    const rounds = Number(r.avg_rounds ?? 0).toFixed(2);
+    const comments = Number(r.avg_comments ?? 0).toFixed(1);
+    const ttm = Math.round(Number(r.avg_ttm_hours ?? 0));
+    return (
+      <Flex flexDirection="column" gap={4} style={{ minWidth: 220 }}>
+        <Heading level={5} style={{ color }}>{title}</Heading>
+        <Heading level={2} style={{ color, fontSize: 28 }}>{passRate}%</Heading>
+        <Paragraph style={{ opacity: 0.7, fontSize: 12 }}>First-attempt pass rate</Paragraph>
+        <Paragraph style={{ opacity: 0.7, fontSize: 12 }}>
+          {total} PRs · avg {rounds} rounds · {comments} comments · {ttm}h to merge
+        </Paragraph>
+      </Flex>
+    );
+  };
+
+  return card(
+    <>
+      <Flex gap={8} alignItems="center">
+        <Heading level={4}>AI-assisted vs Human-only PRs (30 days)</Heading>
+        <QueryInspector query={query} title="AI vs Human PR Quality — DQL" />
+      </Flex>
+      <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
+        Review-iteration health for AI-assisted PRs. If AI cohort lags human cohort,
+        context engineering is the lever — see Pillar 5.
+      </Paragraph>
+      {isLoading ? (
+        loading()
+      ) : !ai && !human ? (
+        empty("No PR data in window")
+      ) : (
+        <Flex gap={32} flexWrap="wrap">
+          {block("AI-assisted", Colors.Charts.Apdex.Good.Default, ai)}
+          {block("Human-only", Colors.Charts.Apdex.Fair.Default, human)}
+        </Flex>
+      )}
+    </>,
+  );
+}
+
+/* ── Page ───────────────────────────────────── */
 export const Quality = () => {
   const { capability } = useCapability();
   return (
@@ -332,6 +392,7 @@ export const Quality = () => {
         Defect Escape Rate (rolling 90 days) — what percentage of bugs are found in production? Target: &lt; 5%. Tracking for {capability.label}.
       </Paragraph>
       <DerSummary />
+      <AiVsHumanPrQuality />
       <Scorecards />
       <DerTrend />
       <ProdBugsByComponent />
