@@ -1,6 +1,6 @@
 # AI-First Observer
 
-A Dynatrace platform app (v0.8.3) measuring the impact of AI-First on software delivery across four pillars: Unlock Value, Quality, Predictability, and Developer Experience. Defaults to Platform Apps (PAPA) but supports any capability via a dropdown selector. Includes a dedicated AI-First page tracking adoption, maturity, repo scorecards, failure modes, champions, and PR first-attempt pass rate.
+A Dynatrace platform app (v0.9.15) measuring the impact of AI-First on software delivery across five pillars: AI-First Adoption, Unlock Value, Quality, Predictability, and Developer Experience. Defaults to Platform Apps (PAPA) but supports any capability via a dropdown selector. The AI-First pillar tracks adoption, maturity, repo scorecards, failure modes, Context Champions, and PR first-attempt pass rate.
 
 ## Environment
 - **App ID**: `my.ai.first.observer`
