@@ -1,7 +1,7 @@
 # AI-First Observer — Copilot Instructions
 
 ## What This Is
-A Dynatrace platform app (v0.6.6) measuring the impact of AI-First on software delivery across four pillars: Unlock Value, Quality, Predictability, and Developer Experience. Defaults to Platform Apps (PAPA) but supports any capability via a dropdown selector.
+A Dynatrace platform app (v0.8.3) measuring the impact of AI-First on software delivery across four pillars: Unlock Value, Quality, Predictability, and Developer Experience. Defaults to Platform Apps (PAPA) but supports any capability via a dropdown selector. Includes a dedicated AI-First page tracking adoption, maturity, repo scorecards, failure modes, champions, and PR first-attempt pass rate.
 
 ## Environment
 - **App ID**: `my.ai.first.observer`
@@ -30,10 +30,10 @@ All queries accept a `Capability` config object from `config.ts`. The capability
 ## Architecture
 ```
 ui/app/
-├── config.ts              # CAPABILITIES registry, scorecardUrl() helper (222 lines)
-├── queries.ts             # 29 DQL query functions, all accept Capability (433 lines)
+├── config.ts              # CAPABILITIES registry, scorecardUrl() helper, aiFirstConfig (305 lines)
+├── queries.ts             # 38 DQL query functions, all accept Capability (622 lines)
 ├── CapabilityContext.tsx   # React context for capability switching
-├── App.tsx                # 5 routes: /, /value, /quality, /predictability, /devex
+├── App.tsx                # 6 routes: /, /value, /quality, /predictability, /devex, /ai-first
 ├── components/
 │   ├── Header.tsx         # Navigation + capability selector dropdown
 │   ├── Card.tsx           # Reusable card component
@@ -43,7 +43,9 @@ ui/app/
     ├── UnlockValue.tsx     # VI throughput, cycle time (math verification + detail table), pipeline, adoption link
     ├── Quality.tsx         # DER summary/split, scorecards, trend, component bugs
     ├── Predictability.tsx  # FV stability, target date drift, delivery accuracy, sprint commitment
-    └── DevExperience.tsx   # Sprint velocity, story cycle time, WIP
+    ├── DevExperience.tsx   # Sprint velocity, story cycle time, WIP
+    └── AiFirst.tsx         # Adoption summary, maturity funnel, repo scorecard, failure modes,
+                           # champions, PR first-attempt pass rate trend, recent PRs (1097 lines)
 ```
 
 ## Key Patterns

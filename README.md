@@ -12,10 +12,10 @@ Defaults to Platform Apps (PAPA) but supports any capability via a dropdown sele
 
 ```
 ui/app/
-├── config.ts              # Capability registry, scorecard config (222 lines)
-├── queries.ts             # All DQL queries — 29 query functions (433 lines)
+├── config.ts              # Capability registry, scorecard config, aiFirstConfig (305 lines)
+├── queries.ts             # All DQL queries — 38 query functions (622 lines)
 ├── CapabilityContext.tsx   # React context for capability switching
-├── App.tsx                # Routes: /, /value, /quality, /predictability, /devex
+├── App.tsx                # Routes: /, /value, /quality, /predictability, /devex, /ai-first
 ├── components/
 │   ├── Header.tsx         # Navigation + capability selector
 │   ├── Card.tsx           # Reusable card component
@@ -25,7 +25,8 @@ ui/app/
     ├── UnlockValue.tsx     # VI throughput, cycle time (with math verification), pipeline, adoption link
     ├── Quality.tsx         # DER summary/split, scorecards, trend, component bugs
     ├── Predictability.tsx  # Fix version stability, target date drift, sprint commitment
-    └── DevExperience.tsx   # Sprint velocity, story cycle time, WIP
+    ├── DevExperience.tsx   # Sprint velocity, story cycle time, WIP
+    └── AiFirst.tsx         # AI-First adoption, maturity funnel, repo scorecard, failure modes, champions, PR pass-rate trend (1097 lines)
 ```
 
 ## Data Sources
