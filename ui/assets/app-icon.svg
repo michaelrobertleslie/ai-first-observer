@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a1d2e"/>
+      <stop offset="100%" stop-color="#0e1020"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="38%" r="55%">
+      <stop offset="0%" stop-color="#9033a3" stop-opacity="0.55"/>
+      <stop offset="60%" stop-color="#9033a3" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Card -->
+  <rect x="0" y="0" width="256" height="256" rx="56" fill="url(#bg)"/>
+  <rect x="0" y="0" width="256" height="256" rx="56" fill="url(#glow)"/>
+  <!-- Five pillars (AI-First tallest, then ordered by importance) -->
+  <g>
+    <rect x="40"  y="60"  width="24" height="140" rx="6" fill="#9033a3"/>  <!-- AI-First   purple -->
+    <rect x="76"  y="84"  width="24" height="116" rx="6" fill="#627cfe"/>  <!-- Value      blue -->
+    <rect x="112" y="100" width="24" height="100" rx="6" fill="#649438"/>  <!-- Quality    green -->
+    <rect x="148" y="120" width="24" height="80"  rx="6" fill="#d56b1a"/>  <!-- Predict.   orange -->
+    <rect x="184" y="140" width="24" height="60"  rx="6" fill="#438fb1"/>  <!-- DevEx      teal -->
+  </g>
+  <!-- Trend slope across the tops, suggesting acceleration -->
+  <polyline
+    points="52,68 88,92 124,108 160,128 196,148"
+    fill="none"
+    stroke="#ffffff"
+    stroke-opacity="0.85"
+    stroke-width="3"
+    stroke-linecap="round"
+    stroke-linejoin="round"/>
+  <!-- Pulse dot on the leading pillar -->
+  <circle cx="52" cy="68" r="6" fill="#ffffff"/>
+  <circle cx="52" cy="68" r="11" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="2"/>
+</svg>

@@ -526,7 +526,7 @@ export function aiFailureDetailQuery(cap: Capability): string {
 | sort score desc`;
 }
 
-/** Champion activity — who's actually maintaining context. */
+/** Context Champions — who's actually maintaining context, with a bloat split. */
 export function aiChampionsQuery(cap: Capability): string {
   return `fetch bizevents, from: now() - 7d
 | filter event.type == "ai_first.repo_scan"
@@ -535,10 +535,14 @@ export function aiChampionsQuery(cap: Capability): string {
   AND \`champion.last_author\` != ""
 | sort timestamp desc
 | dedup {\`repo.project\`, \`repo.slug\`}
+| fieldsAdd is_bloated = if(\`failure.bloat\` == true, 1, else: 0),
+            is_lean = if(\`failure.bloat\` == true, 0, else: 1)
 | summarize repos = count(),
+            lean_repos = sum(is_lean),
+            bloated_repos = sum(is_bloated),
             total_touches = sum(\`champion.touches_90d\`),
             by: {champion = \`champion.last_author\`}
-| sort total_touches desc
+| sort lean_repos desc, total_touches desc
 | limit 25`;
 }
 
@@ -619,4 +623,118 @@ export function aiRecentPrsQuery(cap: Capability): string {
          merged = \`pr.merged\`
 | sort merged desc
 | limit 50`;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Engineer-level + per-repo usage (added 30 April 2026 after Damian
+   round trip — splits "are people set up?" from "are people using it?"
+   ─────────────────────────────────────────────────────────────── */
+
+/** Engineer-level usage — % of active engineers shipping ≥1 Co-authored PR / 30d.
+ *  Active denominator = distinct PR authors who merged any PR in the 30d window.
+ *  Target ≥ 80% by 30 June 2026. */
+export function aiEngineerLevelUsageQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 30d
+| filter event.type == "ai_first.pr_event"
+  AND capability == "${cap.viProgram}"
+  AND isNotNull(\`pr.author\`)
+  AND \`pr.author\` != ""
+| summarize ai_authors = countDistinctExactIf(\`pr.author\`, \`pr.is_ai_assisted\` == true),
+            total_authors = countDistinctExact(\`pr.author\`)
+| fieldsAdd usage_pct = if(total_authors > 0,
+                           toDouble(ai_authors) / toDouble(total_authors) * 100.0,
+                           else: 0.0)`;
+}
+
+/** Per-repo engineer counts (30d). Aggregate only — no names on the card.
+ *  The TEL needs to know: "of the engineers who shipped PRs into my repos
+ *  this month, how many have tried at least one AI-assisted PR?" That's
+ *  what this returns. Per-name detail is only available via the DQL inspector
+ *  (deliberate act: copy the query into a Notebook for a specific 1:1). */
+export function aiEngineerLevelDetailQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 30d
+| filter event.type == "ai_first.pr_event"
+  AND capability == "${cap.viProgram}"
+  AND isNotNull(\`pr.author\`)
+  AND \`pr.author\` != ""
+| summarize total_prs = count(),
+            ai_prs = countIf(\`pr.is_ai_assisted\` == true),
+            tried_ai = if(countIf(\`pr.is_ai_assisted\` == true) > 0, 1, else: 0),
+            by: {author = \`pr.author\`, repo = \`repo.slug\`}
+| summarize engineers = count(),
+            engineers_tried_ai = sum(tried_ai),
+            total_prs = sum(total_prs),
+            ai_prs = sum(ai_prs),
+            by: {repo}
+| fieldsAdd tried_pct = if(engineers > 0,
+                           toDouble(engineers_tried_ai) / toDouble(engineers) * 100.0,
+                           else: 0.0)
+| fieldsAdd ai_share_pct = if(total_prs > 0,
+                              toDouble(ai_prs) / toDouble(total_prs) * 100.0,
+                              else: 0.0)
+| sort repo asc`;
+}
+
+/** Names-only DQL — deliberately not used by the UI, but exposed via the
+ *  card's DQL inspector so a TEL can copy it into a Notebook for a specific
+ *  1:1 conversation. Surveillance friction by design. */
+export function aiEngineerLevelNamesQuery(cap: Capability): string {
+  return `// Per-engineer per-repo detail — for TEL 1:1 prep only.
+// Run this in a Notebook scoped to YOUR repos. This is not a leaderboard.
+fetch bizevents, from: now() - 30d
+| filter event.type == "ai_first.pr_event"
+  AND capability == "${cap.viProgram}"
+  AND isNotNull(\`pr.author\`)
+  AND \`pr.author\` != ""
+  // | filter \`repo.slug\` == "<your-repo-slug>"   // uncomment + scope to your repo
+| summarize total_prs = count(),
+            ai_prs = countIf(\`pr.is_ai_assisted\` == true),
+            by: {author = \`pr.author\`, repo = \`repo.slug\`}
+| fieldsAdd ai_share_pct = if(total_prs > 0,
+                              toDouble(ai_prs) / toDouble(total_prs) * 100.0,
+                              else: 0.0)
+| sort repo asc, ai_share_pct desc`;
+}
+
+/** Per-repo usage rate — % of merged PRs that are AI-assisted, per repo (30d).
+ *  Target ≥ 40% per repo by 30 June 2026. */
+export function aiPerRepoUsageQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 30d
+| filter event.type == "ai_first.pr_event"
+  AND capability == "${cap.viProgram}"
+| summarize total_prs = count(),
+            ai_prs = countIf(\`pr.is_ai_assisted\` == true),
+            by: {repo = \`repo.slug\`, project = \`repo.project\`}
+| fieldsAdd ai_share_pct = if(total_prs > 0,
+                              toDouble(ai_prs) / toDouble(total_prs) * 100.0,
+                              else: 0.0)
+| sort ai_share_pct desc, total_prs desc`;
+}
+
+/** PDR/ADR-driven PR count per repo (30d).
+ *  Heuristic: PR title or signal references a PDR or ADR.
+ *  Until the scanner is extended to emit a dedicated `pr.references_pdr_adr`
+ *  field, this looks for "PDR-", "ADR-", "pdrs/", "adrs/" markers in the
+ *  PR title. Lower bound on real lifecycle adoption.
+ *  No fixed June target — leading indicator we want trending up. */
+export function aiPdrAdrDrivenPrQuery(cap: Capability): string {
+  return `fetch bizevents, from: now() - 30d
+| filter event.type == "ai_first.pr_event"
+  AND capability == "${cap.viProgram}"
+| fieldsAdd title_lc = lower(\`pr.title\`)
+| fieldsAdd is_pdr_adr = if(contains(title_lc, "pdr-")
+                            OR contains(title_lc, "adr-")
+                            OR contains(title_lc, "pdrs/")
+                            OR contains(title_lc, "adrs/")
+                            OR contains(title_lc, "[pdr]")
+                            OR contains(title_lc, "[adr]"),
+                            true, else: false)
+| summarize total_prs = count(),
+            pdr_adr_prs = countIf(is_pdr_adr == true),
+            ai_pdr_adr_prs = countIf(is_pdr_adr == true AND \`pr.is_ai_assisted\` == true),
+            by: {repo = \`repo.slug\`}
+| fieldsAdd pdr_adr_share_pct = if(total_prs > 0,
+                                   toDouble(pdr_adr_prs) / toDouble(total_prs) * 100.0,
+                                   else: 0.0)
+| sort pdr_adr_prs desc, repo asc`;
 }

@@ -366,7 +366,7 @@ function AiVsHumanPrQuality() {
       </Flex>
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
         Review-iteration health for AI-assisted PRs. If AI cohort lags human cohort,
-        context engineering is the lever — see Pillar 5.
+        context engineering is the lever — see Pillar 1.
       </Paragraph>
       {isLoading ? (
         loading()
@@ -387,7 +387,7 @@ export const Quality = () => {
   const { capability } = useCapability();
   return (
     <Flex flexDirection="column" gap={16} padding={16}>
-      <Heading level={2}>Pillar 2: Quality</Heading>
+      <Heading level={2}>Pillar 3: Quality</Heading>
       <Paragraph style={{ opacity: 0.6 }}>
         Defect Escape Rate (rolling 90 days) — what percentage of bugs are found in production? Target: &lt; 5%. Tracking for {capability.label}.
       </Paragraph>

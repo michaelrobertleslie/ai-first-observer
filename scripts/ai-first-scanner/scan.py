@@ -228,7 +228,11 @@ class Bitbucket:
             )
             return data.get("values", [])
         except requests.HTTPError as e:
-            if e.response is not None and e.response.status_code == 404:
+            # Bitbucket returns 404 when the directory does not exist, but in
+            # some cases (e.g. path resolves to a file or sits behind a
+            # different default branch) it returns 400. Treat both as "no
+            # content here" rather than aborting the whole repo scan.
+            if e.response is not None and e.response.status_code in (400, 404):
                 return []
             raise
 

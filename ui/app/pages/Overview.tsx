@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Flex } from "@dynatrace/strato-components/layouts";
 import { Surface } from "@dynatrace/strato-components/layouts";
-import { Heading, Paragraph } from "@dynatrace/strato-components/typography";
+import { Heading, Paragraph, Strong } from "@dynatrace/strato-components/typography";
 import { useDql } from "@dynatrace-sdk/react-hooks";
 import { ProgressCircle } from "@dynatrace/strato-components/content";
 import Colors from "@dynatrace/strato-design-tokens/colors";
@@ -53,12 +53,14 @@ function HeroKpi({ label, value, target, pct, color, sub }: {
 }
 
 /* ── Pillar navigation card ──────────────────────────── */
-const PILLAR_COLORS = [
-  Colors.Charts.Apdex.Excellent.Default,
-  Colors.Charts.Apdex.Good.Default,
-  Colors.Charts.Apdex.Fair.Default,
-  Colors.Charts.Apdex.Poor.Default,
-  Colors.Charts.Apdex.Excellent.Default,
+// Index matches pillar order on the Overview: 0=AI-First, 1=Unlock Value,
+// 2=Quality, 3=Predictability, 4=Developer Experience.
+export const PILLAR_COLORS = [
+  Colors.Charts.Categorical.Color15.Default, // AI-First       — purple
+  Colors.Charts.Categorical.Color11.Default, // Unlock Value   — bright blue
+  Colors.Charts.Categorical.Color09.Default, // Quality        — green
+  Colors.Charts.Categorical.Color14.Default, // Predictability — orange
+  Colors.Charts.Categorical.Color07.Default, // Developer Exp. — teal
 ];
 
 /** Compute quarter-over-quarter trend from monthly records.
@@ -126,7 +128,7 @@ function PillarCard({ n, title, desc, metric, route, color, trend, trendGood }: 
             )}
           </Flex>
           <Paragraph style={{ opacity: 0.6, fontSize: 12, flex: 1 }}>{desc}</Paragraph>
-          <Paragraph style={{ fontSize: 11, fontWeight: 600, color }}>{metric}</Paragraph>
+          <Paragraph style={{ fontSize: 11, fontWeight: 600, color, lineHeight: 1.4, wordBreak: "break-word" }}>{metric}</Paragraph>
         </Flex>
       </Surface>
     </Link>
@@ -179,19 +181,122 @@ export const Overview = () => {
   return (
     <Flex flexDirection="column" gap={20} padding={16}>
       {/* ── Hero banner ─────────────────────────────── */}
-      <Surface style={{ width: "100%", background: "linear-gradient(135deg, rgba(99,102,241,0.10) 0%, rgba(20,184,166,0.08) 100%)" }}>
-        <Flex flexDirection="column" gap={12} padding={32}>
-          <Heading level={1} style={{ fontSize: 28, letterSpacing: -0.5 }}>
-            AI-First Observer — {capability.label}
-          </Heading>
-          <Paragraph style={{ opacity: 0.6, fontSize: 15, lineHeight: 1.6 }}>
-            Can AI-powered engineering compress a 4-year roadmap into 1?
-            This dashboard tracks the proof — throughput acceleration, quality at scale, delivery predictability,
-            and developer experience — across {totalClosed > 0 ? `${totalClosed} Value Increments` : "every Value Increment"} delivered in the last 12 months.
-          </Paragraph>
-          <Flex gap={24} style={{ marginTop: 4 }}>
-            <Paragraph style={{ opacity: 0.35, fontSize: 12 }}>Throughput · Cycle Time · Defect Escape Rate · Fix Version Stability · Sprint Velocity</Paragraph>
+      <Surface
+        style={{
+          width: "100%",
+          position: "relative",
+          overflow: "hidden",
+          background:
+            "radial-gradient(circle at 0% 0%, rgba(144,51,163,0.22) 0%, transparent 45%)," +
+            "radial-gradient(circle at 100% 100%, rgba(98,124,254,0.18) 0%, transparent 50%)," +
+            "linear-gradient(135deg, rgba(20,24,40,0.55) 0%, rgba(20,24,40,0.25) 100%)",
+          borderTop: `2px solid ${PILLAR_COLORS[0]}`,
+        }}
+      >
+        {/* Pillar colour stripe across the bottom of the hero, ties to the cards & nav dots */}
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 3,
+            display: "flex",
+          }}
+        >
+          {PILLAR_COLORS.map((c, i) => (
+            <div key={i} style={{ flex: 1, background: c }} />
+          ))}
+        </div>
+        <Flex flexDirection="column" gap={16} padding={32}>
+          <Flex gap={8} alignItems="center" flexFlow="wrap">
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: 2,
+                textTransform: "uppercase",
+                opacity: 0.55,
+              }}
+            >
+              AI-First Observer
+            </span>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: 1.5,
+                textTransform: "uppercase",
+                opacity: 0.4,
+                paddingLeft: 4,
+              }}
+            >
+              {capability.label}
+            </span>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: 1,
+                textTransform: "uppercase",
+                padding: "2px 8px",
+                borderRadius: 10,
+                background: `${PILLAR_COLORS[0]}33`,
+                color: PILLAR_COLORS[0],
+                border: `1px solid ${PILLAR_COLORS[0]}66`,
+              }}
+            >
+              v0.9 · live
+            </span>
           </Flex>
+          <Heading level={1} style={{ fontSize: 34, letterSpacing: -0.6, lineHeight: 1.15 }}>
+            How AI-First is changing engineering.
+          </Heading>
+          <Paragraph style={{ opacity: 0.7, fontSize: 15, lineHeight: 1.6, maxWidth: 880 }}>
+            Five pillars: adoption, what we ship, the quality of what we ship, how reliably we ship it,
+            and what it's like to work here. Measured against the same Grail data the teams use day-to-day.
+            Every value increment, every bug, every PR.
+            {totalClosed > 0 ? (<> <Strong>{totalClosed} VIs</Strong> closed in the last 12 months.</>) : null}
+          </Paragraph>
+          <Flex gap={8} flexFlow="wrap" style={{ marginTop: 4 }}>
+            {[
+              { label: "AI-First Adoption", c: PILLAR_COLORS[0] },
+              { label: "Unlock Value", c: PILLAR_COLORS[1] },
+              { label: "Quality", c: PILLAR_COLORS[2] },
+              { label: "Predictability", c: PILLAR_COLORS[3] },
+              { label: "Developer Experience", c: PILLAR_COLORS[4] },
+            ].map((p) => (
+              <span
+                key={p.label}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  padding: "4px 10px",
+                  borderRadius: 12,
+                  background: `${p.c}1f`,
+                  border: `1px solid ${p.c}55`,
+                  color: p.c,
+                }}
+              >
+                <span
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: p.c,
+                    display: "inline-block",
+                  }}
+                />
+                {p.label}
+              </span>
+            ))}
+          </Flex>
+          <Paragraph style={{ opacity: 0.45, fontSize: 12, marginTop: 4 }}>
+            Every card shows the DQL behind it and opens straight into a Notebook.
+          </Paragraph>
         </Flex>
       </Surface>
 
@@ -238,33 +343,33 @@ export const Overview = () => {
       {/* ── Pillar navigation cards ─────────────────── */}
       <Flex gap={16} flexFlow="wrap" style={{ width: "100%" }}>
         <PillarCard
-          n="1" title="Unlock Value" route="/value" color={PILLAR_COLORS[0]}
+          n="1" title="AI-First Adoption" route="/ai-first" color={PILLAR_COLORS[0]}
+          desc="Context-engineering coverage and AI-PR review-iteration health across the capability's repos. The lever everything else hangs off."
+          metric="Maturity · failure modes · champions →"
+        />
+        <PillarCard
+          n="2" title="Unlock Value" route="/value" color={PILLAR_COLORS[1]}
           desc="Deliver more valuable features, faster. Compress the 4-year roadmap into 1 year."
           metric={`${totalClosed} VIs closed · ${p50}d median cycle`}
           trend={valueTrend} trendGood="up"
         />
         <PillarCard
-          n="2" title="Quality" route="/quality" color={PILLAR_COLORS[1]}
+          n="3" title="Quality" route="/quality" color={PILLAR_COLORS[2]}
           desc="Drive Defect Escape Rate below 5%. Catch bugs before they reach customers."
           metric={`${derPct.toFixed(1)}% DER · ${custBugs} customer-escalated`}
           trend={qualityTrend} trendGood="down"
         />
         <PillarCard
-          n="3" title="Predictability" route="/predictability" color={PILLAR_COLORS[2]}
+          n="4" title="Predictability" route="/predictability" color={PILLAR_COLORS[3]}
           desc="Stable fix versions and target dates. Deliver what we commit to, when we commit to it."
           metric="Fix version stability →"
           trend={predDirection} trendGood="down"
         />
         <PillarCard
-          n="4" title="Developer Experience" route="/devex" color={PILLAR_COLORS[3]}
+          n="5" title="Developer Experience" route="/devex" color={PILLAR_COLORS[4]}
           desc="Identify bottlenecks, reduce friction, and empower engineers to solve their own problems."
           metric="Sprint velocity & cycle time →"
           trend={devexDirection} trendGood="down"
-        />
-        <PillarCard
-          n="5" title="AI-First Adoption" route="/ai-first" color={PILLAR_COLORS[4]}
-          desc="Context-engineering coverage and AI-PR review-iteration health across the capability's repos."
-          metric="Maturity tiers · failure modes · champion activity →"
         />
       </Flex>
 

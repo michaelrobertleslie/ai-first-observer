@@ -435,7 +435,7 @@ export const Predictability = () => {
   const { capability } = useCapability();
   return (
     <Flex flexDirection="column" gap={16} padding={16}>
-      <Heading level={2}>Pillar 3: Predictability</Heading>
+      <Heading level={2}>Pillar 4: Predictability</Heading>
       <Paragraph style={{ opacity: 0.6 }}>
         How often do delivery commitments shift? Tracking fix version stability and target date drift for {capability.label}.
       </Paragraph>

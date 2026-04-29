@@ -225,7 +225,7 @@ export const DevExperience = () => {
   const { capability } = useCapability();
   return (
     <Flex flexDirection="column" gap={16} padding={16}>
-      <Heading level={2}>Pillar 4: Developer Experience</Heading>
+      <Heading level={2}>Pillar 5: Developer Experience</Heading>
       <Paragraph style={{ opacity: 0.6 }}>
         Identify bottlenecks, reduce friction, and empower engineers to solve their own problems. The metrics below expose where
         work stalls so {capability.label} teams can self-diagnose and act — without waiting for a report.

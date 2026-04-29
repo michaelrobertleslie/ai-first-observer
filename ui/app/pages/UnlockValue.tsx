@@ -420,7 +420,7 @@ export const UnlockValue = () => {
   const { capability } = useCapability();
   return (
     <Flex flexDirection="column" gap={16} padding={16}>
-      <Heading level={2}>Pillar 1: Unlock Value</Heading>
+      <Heading level={2}>Pillar 2: Unlock Value</Heading>
       <Paragraph style={{ opacity: 0.6 }}>
         The flagship AI-First metric: are we delivering more valuable features, faster?
         Tracking VI throughput, cycle time trends, and delivery velocity for {capability.label}.

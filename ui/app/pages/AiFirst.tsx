@@ -20,6 +20,11 @@ import {
   aiPrSplitQuery,
   aiCorrectionHeatmapQuery,
   aiRecentPrsQuery,
+  aiEngineerLevelUsageQuery,
+  aiEngineerLevelDetailQuery,
+  aiEngineerLevelNamesQuery,
+  aiPerRepoUsageQuery,
+  aiPdrAdrDrivenPrQuery,
 } from "../queries";
 import { QueryInspector } from "../components/QueryInspector";
 
@@ -428,6 +433,283 @@ function RepoScorecard() {
   );
 }
 
+/* ── Engineer-level usage (added 30 Apr 2026) ────────── */
+function EngineerLevelUsage() {
+  const { capability } = useCapability();
+  const summaryQuery = aiEngineerLevelUsageQuery(capability);
+  const detailQuery = aiEngineerLevelDetailQuery(capability);
+  const { data: summary, isLoading: summaryLoading } = useDql({ query: summaryQuery });
+  const { data: detail, isLoading: detailLoading } = useDql({ query: detailQuery });
+
+  const target = 80;
+  const r = summary?.records?.[0];
+  const aiAuthors = Number(r?.ai_authors ?? 0);
+  const totalAuthors = Number(r?.total_authors ?? 0);
+  const usagePct = Math.round(Number(r?.usage_pct ?? 0));
+  const meets = usagePct >= target;
+
+  const namesQuery = aiEngineerLevelNamesQuery(capability);
+
+  const repoRows = useMemo(() => {
+    const records = detail?.records ?? [];
+    return records
+      .map((rec) => ({
+        repo: String(rec.repo ?? ""),
+        engineers: Number(rec.engineers ?? 0),
+        triedAi: Number(rec.engineers_tried_ai ?? 0),
+        triedPct: Math.round(Number(rec.tried_pct ?? 0)),
+        sharePct: Math.round(Number(rec.ai_share_pct ?? 0)),
+      }))
+      .sort((a, b) => a.repo.localeCompare(b.repo));
+  }, [detail]);
+
+  return card(
+    <>
+      <Heading level={4}>Engineer-level usage (last 30d)</Heading>
+      <QueryInspector query={summaryQuery} title="Engineer-level usage — DQL" floatBottomRight />
+      <Paragraph style={{ opacity: 0.6, fontSize: 12 }}>
+        Are people actually working AI-First, or just set up for it? Counts active PR authors who shipped at least
+        one Co-authored PR in the last 30 days. Active denominator is anyone who merged any PR in the same window.
+        Target {target}% by 30 June 2026.
+      </Paragraph>
+      <Paragraph style={{ opacity: 0.45, fontSize: 11, lineHeight: 1.5 }}>
+        Aggregate counts only on this card. Per-engineer names are deliberately not displayed — this is not a
+        homework-checking dashboard. TELs who need names for a specific 1:1 use the "Per-engineer detail (TEL
+        prep)" query under the DQL inspector and run it in a Notebook scoped to their own repos.
+        AI-PR detection is a lower-bound: it counts Co-authored-by trailers, AI-prefixed branches, and explicit
+        [AI] tags only.
+      </Paragraph>
+      {summaryLoading ? loading() : totalAuthors === 0 ? (
+        empty("No PR data yet — run scripts/ai-first-scanner/scan.py with --emit.")
+      ) : (
+        <Flex gap={32} flexWrap="wrap" justifyContent="center">
+          <KpiBlock
+            value={`${usagePct}%`}
+            label={`Engineers with ≥1 AI PR (target ${target}%)`}
+            color={meets ? Colors.Charts.Apdex.Excellent.Default : colourForScore(usagePct)}
+          />
+          <KpiBlock value={String(aiAuthors)} label="AI-shipping engineers" />
+          <KpiBlock value={String(totalAuthors)} label="Active engineers (30d)" />
+        </Flex>
+      )}
+      <details open style={{
+        background: "rgba(255,255,255,0.02)",
+        border: "1px solid rgba(255,255,255,0.06)",
+        borderRadius: 4,
+        padding: "8px 16px",
+      }}>
+        <summary style={{
+          cursor: "pointer",
+          fontSize: 11,
+          opacity: 0.7,
+          textTransform: "uppercase",
+          letterSpacing: 1.2,
+          padding: "4px 0",
+        }}>
+          Per-repo summary — counts only, no names
+        </summary>
+        <div style={{ paddingTop: 10 }}>
+          <Paragraph style={{ opacity: 0.5, fontSize: 11, lineHeight: 1.5, marginBottom: 8 }}>
+            For each repo: how many active engineers have tried at least one AI-assisted PR. A repo with 0 of N
+            engineers having tried is the signal a champion or TEL is needed there. The number who tried matters
+            more than the AI share %; one engineer trying a few PRs is the start of adoption.
+          </Paragraph>
+          {detailLoading ? loading() : repoRows.length === 0 ? (
+            empty("No engineer data yet")
+          ) : (
+            <Flex flexDirection="column" gap={4} style={{ paddingTop: 4 }}>
+              {repoRows.map((row) => {
+                const colour = row.triedPct >= 80 ? Colors.Charts.Apdex.Excellent.Default
+                  : row.triedPct >= 50 ? Colors.Charts.Apdex.Good.Default
+                  : row.triedPct > 0 ? Colors.Charts.Apdex.Fair.Default
+                  : Colors.Charts.Apdex.Unacceptable.Default;
+                return (
+                  <Flex
+                    key={row.repo}
+                    gap={16}
+                    alignItems="center"
+                    justifyContent="space-between"
+                    style={{
+                      padding: "6px 12px",
+                      borderTop: "1px dashed rgba(255,255,255,0.06)",
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>{row.repo}</Text>
+                    <Text style={{ fontSize: 11, opacity: 0.7, minWidth: 200 }}>
+                      {row.triedAi} of {row.engineers} engineer{row.engineers === 1 ? "" : "s"} tried AI
+                    </Text>
+                    <Text style={{ fontSize: 11, fontWeight: 700, color: colour, minWidth: 60, textAlign: "right" }}>
+                      {row.triedPct}%
+                    </Text>
+                  </Flex>
+                );
+              })}
+            </Flex>
+          )}
+        </div>
+      </details>
+      <details style={{
+        background: "rgba(255,255,255,0.02)",
+        border: "1px solid rgba(255,255,255,0.06)",
+        borderRadius: 4,
+        padding: "8px 16px",
+      }}>
+        <summary style={{
+          cursor: "pointer",
+          fontSize: 11,
+          opacity: 0.7,
+          textTransform: "uppercase",
+          letterSpacing: 1.2,
+          padding: "4px 0",
+        }}>
+          Per-engineer detail (TEL prep) — open in Notebook only
+        </summary>
+        <div style={{ paddingTop: 10 }}>
+          <Paragraph style={{ opacity: 0.5, fontSize: 11, lineHeight: 1.5, marginBottom: 8 }}>
+            Names are intentionally not rendered on the dashboard. If you're a TEL preparing for a 1:1, click the
+            DQL inspector below, copy the query, scope it to your own repo, and run it in a Notebook. The friction
+            is deliberate.
+          </Paragraph>
+          <QueryInspector query={namesQuery} title="Per-engineer detail (TEL prep) — DQL" />
+        </div>
+      </details>
+    </>,
+  );
+}
+
+/* ── Per-repo usage rate (added 30 Apr 2026) ────────── */
+function PerRepoUsage() {
+  const { capability } = useCapability();
+  const query = aiPerRepoUsageQuery(capability);
+  const { data, isLoading } = useDql({ query });
+
+  const target = 40;
+  const records = data?.records ?? [];
+  const reposMeeting = records.filter((r) => Number(r.ai_share_pct ?? 0) >= target).length;
+  const totalRepos = records.length;
+
+  const columns: Col[] = useMemo(
+    () => [
+      { id: "repo", accessor: "repo", header: "Repo", minWidth: 240 },
+      { id: "project", accessor: "project", header: "Project", minWidth: 100 },
+      { id: "ai_prs", accessor: "ai_prs", header: "AI PRs (30d)", minWidth: 110, alignment: "right" as const },
+      { id: "total_prs", accessor: "total_prs", header: "Total PRs (30d)", minWidth: 130, alignment: "right" as const },
+      {
+        id: "ai_share_pct",
+        accessor: "ai_share_pct",
+        header: "AI share %",
+        minWidth: 110,
+        alignment: "right" as const,
+        cell: ({ value }: { value: unknown }) => {
+          const n = Math.round(Number(value ?? 0));
+          const colour = n >= target ? Colors.Charts.Apdex.Excellent.Default
+            : n >= target / 2 ? Colors.Charts.Apdex.Fair.Default
+            : Colors.Charts.Apdex.Unacceptable.Default;
+          return (
+            <span style={{ display: "flex", alignItems: "center", height: "100%", color: colour, fontWeight: 700 }}>
+              {n}%
+            </span>
+          );
+        },
+      },
+    ],
+    [],
+  );
+
+  return card(
+    <>
+      <Heading level={4}>Per-repo usage rate (last 30d)</Heading>
+      <QueryInspector query={query} title="Per-repo usage — DQL" floatBottomRight />
+      <Paragraph style={{ opacity: 0.6, fontSize: 12 }}>
+        Share of merged PRs that are Co-authored, per repo. Target {target}% per repo by 30 June 2026. Repos at the
+        bottom of this list are where AI-First isn't landing yet — TELs and champions, that's where to spend the
+        weekly cycle.
+      </Paragraph>
+      {isLoading ? loading() : totalRepos === 0 ? (
+        empty("No PR data yet")
+      ) : (
+        <>
+          <Flex gap={32} flexWrap="wrap" justifyContent="center">
+            <KpiBlock
+              value={`${reposMeeting}/${totalRepos}`}
+              label={`Repos at ≥${target}% AI share`}
+              color={reposMeeting === totalRepos
+                ? Colors.Charts.Apdex.Excellent.Default
+                : colourForScore(totalRepos > 0 ? (reposMeeting / totalRepos) * 100 : 0)}
+            />
+          </Flex>
+          <DataTable data={records} columns={columns} sortable />
+        </>
+      )}
+    </>,
+  );
+}
+
+/* ── PDR/ADR-driven PR count (added 30 Apr 2026) ────── */
+function PdrAdrDrivenPrs() {
+  const { capability } = useCapability();
+  const query = aiPdrAdrDrivenPrQuery(capability);
+  const { data, isLoading } = useDql({ query });
+
+  const records = data?.records ?? [];
+  const totalPdrAdrPrs = records.reduce((sum, r) => sum + Number(r.pdr_adr_prs ?? 0), 0);
+  const totalAiPdrAdrPrs = records.reduce((sum, r) => sum + Number(r.ai_pdr_adr_prs ?? 0), 0);
+
+  const columns: Col[] = useMemo(
+    () => [
+      { id: "repo", accessor: "repo", header: "Repo", minWidth: 240 },
+      { id: "pdr_adr_prs", accessor: "pdr_adr_prs", header: "PDR/ADR PRs (30d)", minWidth: 150, alignment: "right" as const },
+      { id: "ai_pdr_adr_prs", accessor: "ai_pdr_adr_prs", header: "AI + PDR/ADR PRs", minWidth: 150, alignment: "right" as const },
+      { id: "total_prs", accessor: "total_prs", header: "Total PRs (30d)", minWidth: 130, alignment: "right" as const },
+      {
+        id: "pdr_adr_share_pct",
+        accessor: "pdr_adr_share_pct",
+        header: "PDR/ADR share %",
+        minWidth: 130,
+        alignment: "right" as const,
+        cell: ({ value }: { value: unknown }) => {
+          const n = Math.round(Number(value ?? 0));
+          return (
+            <span style={{ display: "flex", alignItems: "center", height: "100%", fontWeight: 600 }}>
+              {n}%
+            </span>
+          );
+        },
+      },
+    ],
+    [],
+  );
+
+  return card(
+    <>
+      <Heading level={4}>PDR/ADR-driven PRs (last 30d)</Heading>
+      <QueryInspector query={query} title="PDR/ADR-driven PRs — DQL" floatBottomRight />
+      <Paragraph style={{ opacity: 0.6, fontSize: 12 }}>
+        Surfaces full AIDLC use: PRs whose title references a PDR or ADR. No fixed June target — leading indicator
+        we want trending up, separate from IDE-only prompting.
+      </Paragraph>
+      <Paragraph style={{ opacity: 0.45, fontSize: 11, lineHeight: 1.5 }}>
+        <strong>Heuristic, not authoritative.</strong> Currently matches "PDR-", "ADR-", "pdrs/", "adrs/", "[PDR]",
+        "[ADR]" markers in the PR title. The scanner doesn't yet emit a dedicated <code>pr.references_pdr_adr</code> field.
+        Working group week 3-4 will extend the scanner to detect PDR/ADR linkage in PR description and changed files,
+        which will tighten this number considerably. Until then, treat this as a lower bound.
+      </Paragraph>
+      {isLoading ? loading() : records.length === 0 ? (
+        empty("No PR data yet")
+      ) : (
+        <>
+          <Flex gap={32} flexWrap="wrap" justifyContent="center">
+            <KpiBlock value={String(totalPdrAdrPrs)} label="PDR/ADR-referenced PRs" />
+            <KpiBlock value={String(totalAiPdrAdrPrs)} label="…of which AI-assisted" />
+            <KpiBlock value={String(records.length)} label="Repos with PR activity" />
+          </Flex>
+          <DataTable data={records} columns={columns} sortable />
+        </>
+      )}
+    </>,
+  );
+}
+
 /* ── Failure modes (counts + drill-down list) ────────── */
 function FailureModes() {
   const { capability } = useCapability();
@@ -719,7 +1001,7 @@ function FirstAttemptPassTrend() {
   );
 }
 
-/* ── Champions (table) ───────────────────────────────── */
+/* ── Context Champions (table) ──────────────────────── */
 function Champions() {
   const { capability } = useCapability();
   const query = aiChampionsQuery(capability);
@@ -727,8 +1009,9 @@ function Champions() {
 
   const columns: Col[] = useMemo(
     () => [
-      { id: "champion", accessor: "champion", header: "Champion", minWidth: 260 },
-      { id: "repos", accessor: "repos", header: "Repos", minWidth: 80, alignment: "right" as const },
+      { id: "champion", accessor: "champion", header: "Context Champion", minWidth: 240 },
+      { id: "lean_repos", accessor: "lean_repos", header: "Lean repos", minWidth: 100, alignment: "right" as const },
+      { id: "bloated_repos", accessor: "bloated_repos", header: "Bloated repos", minWidth: 110, alignment: "right" as const },
       {
         id: "total_touches",
         accessor: "total_touches",
@@ -742,17 +1025,18 @@ function Champions() {
 
   return card(
     <>
-      <Heading level={4}>Champions</Heading>
-        <QueryInspector query={query} title="Champions — DQL" floatBottomRight />
+      <Heading level={4}>Context Champions</Heading>
+        <QueryInspector query={query} title="Context Champions — DQL" floatBottomRight />
       <Paragraph style={{ opacity: 0.5, fontSize: 12 }}>
-        Engineers actively maintaining context files (CLAUDE.md, AGENTS.md, .claude/rules, .claude/skills) — derived from
-        Bitbucket commit history of those paths over the last 90 days. Champions emerge organically; you don't configure
-        them. Repos with no champion show as empty here and indicate context is going stale.
+        Engineers adding the most context that benefits the whole capability. Commits to CLAUDE.md, AGENTS.md,
+        .claude/rules, .claude/skills over the last 90 days. Sorted by lean repos first, then by commit volume, so the
+        top of the list is people raising the bar without bloating main files (anything over 2,500 tokens counts as
+        bloat). High commit count alongside bloated repos means context is growing faster than it's being pruned.
       </Paragraph>
       {isLoading ? loading() : (data?.records?.length ?? 0) > 0 ? (
         <DataTable data={data!.records!} columns={columns} sortable />
       ) : (
-        empty("No champion activity recorded")
+        empty("No context activity recorded")
       )}
     </>,
   );
@@ -1059,7 +1343,7 @@ export const AiFirst = () => {
     <Flex flexDirection="column" gap={16} padding={24}>
       {card(
         <>
-          <Heading level={2}>Pillar 5: AI-First Adoption</Heading>
+          <Heading level={2}>Pillar 1: AI-First Adoption</Heading>
           <Paragraph style={{ opacity: 0.7 }}>
             Context-engineering signals from across the capability's repositories. Driven by
             the AI-First scanner (scripts/ai-first-scanner/) plus PR review telemetry from
@@ -1088,6 +1372,9 @@ export const AiFirst = () => {
             <CorrectionHeatmap />
             <Champions />
             <RecentAiPrs />
+            <PdrAdrDrivenPrs />
+            <PerRepoUsage />
+            <EngineerLevelUsage />
             <ConfigurationCard />
           </Flex>
         </>
